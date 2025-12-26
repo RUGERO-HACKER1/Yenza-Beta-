@@ -1,0 +1,51 @@
+{
+  "users": [
+    {
+      "id": "admin_user_1",
+      "name": "System Admin",
+      "email": "admin@yenza.com",
+      "password": "password123",
+      "role": "admin",
+      "bio": "Platform Administrator",
+      "skills": [],
+      "experience": [],
+      "applications": []
+    },
+    {
+      "id": "1766774651687",
+      "name": "RUGERO FIDELE",
+      "email": "fidelerugero1@gmail.com",
+      "password": "@RUGfid20070825",
+      "role": "user",
+      "isProfileComplete": true,
+      "bookmarks": [],
+      "applications": [],
+      "nationality": "rwandan",
+      "education": "High School",
+      "birthday": "2025-12-17"
+    }
+  ],
+  "companies": [],
+  "opportunities": [],
+  "applications": [],
+  "messages": [
+    {
+      "id": "msg_1766775587073",
+      "name": "RUGERO FIDELE",
+      "email": "fidelerugero100@gmail.com",
+      "subject": "Report",
+      "message": "hello am i in",
+      "read": false,
+      "createdAt": "2025-12-26T18:59:47.073Z"
+    },
+    {
+      "id": "msg_1766775767335",
+      "name": "RUGERO FIDELE",
+      "email": "fidelerugero1@gmail.com",
+      "subject": "Support",
+      "message": "hello",
+      "read": false,
+      "createdAt": "2025-12-26T19:02:47.335Z"
+    }
+  ]
+}
