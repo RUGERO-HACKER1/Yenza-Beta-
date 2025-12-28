@@ -144,15 +144,7 @@ app.get('/companies/:id', async (req, res) => {
     }
 });
 
-// POST New Message (Contact Form)
-app.post('/messages', (req, res) => {
-    // Phase 19: Keep simple for now? 
-    // Wait, let's just make it response success as placeholder or use db.
-    // For now, let's skip implementing the full message table unless requested, or just return success.
-    // Actually, user requested Contact form.
-    console.log("Message received:", req.body);
-    res.status(201).json({ message: "Message sent" });
-});
+
 
 // GET Public Stats
 app.get('/stats', async (req, res) => {
@@ -502,6 +494,21 @@ app.get('/analytics/views', async (req, res) => {
     }
 });
 
+
+// DEBUG DB SCHEMA
+app.get('/debug/db', async (req, res) => {
+    try {
+        const result = await query(`
+            SELECT table_name, column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_schema = 'public' 
+            ORDER BY table_name, column_name;
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 const startServer = (port) => {
     app.listen(port, () => {
