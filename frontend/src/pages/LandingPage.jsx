@@ -90,6 +90,56 @@ const LandingPage = () => {
                 </div>
             </section>
 
+            {/* GIG ECONOMY BANNER (Pipeline 3) */}
+            <section className="container" style={{ marginBottom: '6rem' }}>
+                <div style={{
+                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    borderRadius: '24px',
+                    padding: '3rem',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '2rem',
+                    boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.3)'
+                }}>
+                    <div style={{ flex: 1, minWidth: '300px' }}>
+                        <span style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            letterSpacing: '0.05em'
+                        }}>
+                            NEW: GIG ECONOMY
+                        </span>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: '800', margin: '1rem 0 0.5rem', lineHeight: '1.2' }}>
+                            Turn your skills into income.
+                        </h2>
+                        <p style={{ fontSize: '1.1rem', opacity: '0.9' }}>
+                            Post a service or find short-term work. Get paid today.
+                        </p>
+                    </div>
+                    <div>
+                        <Link to="/post-opportunity" className="btn" style={{
+                            background: 'white',
+                            color: '#059669',
+                            padding: '1rem 2rem',
+                            fontSize: '1.1rem',
+                            fontWeight: 'bold',
+                            border: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}>
+                            Submit a Gig → Earn Money Today
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
 
 
             {/* WHO WE HELP SECTION (Phase 19.4) */}
