@@ -480,6 +480,7 @@ const OpportunityDetailsPage = () => {
                 </div>
 
                 {showModal && renderApplicationModal()}
+                {showExternalModal && renderExternalApplyModal()}
             </div>
         )
     }
