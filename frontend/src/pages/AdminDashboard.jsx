@@ -138,14 +138,19 @@ const AdminDashboard = () => {
         }
     };
 
-    // Chart Data
-    const typeData = [
-        { name: 'Job', value: ops.filter(o => o.type === 'job').length },
-        { name: 'Internship', value: ops.filter(o => o.type === 'internship').length },
-        { name: 'Event', value: ops.filter(o => o.type === 'event').length },
-        { name: 'Training', value: ops.filter(o => o.type === 'training').length },
-    ].filter(d => d.value > 0);
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+    // Chart Data (Dynamic)
+    const typeCounts = ops.reduce((acc, op) => {
+        const t = (op.type || 'other').toLowerCase();
+        acc[t] = (acc[t] || 0) + 1;
+        return acc;
+    }, {});
+
+    const typeData = Object.keys(typeCounts).map(type => ({
+        name: type.charAt(0).toUpperCase() + type.slice(1),
+        value: typeCounts[type]
+    }));
+
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
     return (
         <div className="dashboard-container" style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6' }}>
@@ -183,12 +188,12 @@ const AdminDashboard = () => {
                                 <StatCard label="Active Jobs" value={stats.opsApproved} color="green" />
                                 <StatCard label="Pending Jobs" value={stats.opsPending} color="yellow" />
 
-                                <div style={{ gridColumn: 'span 2', background: 'white', padding: '1.5rem', borderRadius: '12px' }}>
+                                <div style={{ gridColumn: 'span 4', background: 'white', padding: '1.5rem', borderRadius: '12px' }}>
                                     <h3>Opportunity Distribution</h3>
                                     <div style={{ height: 300 }}>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
-                                                <Pie data={typeData} cx="50%" cy="50%" outerRadius={80} fill="#8884d8" dataKey="value" label>
+                                                <Pie data={typeData} cx="50%" cy="50%" outerRadius={100} fill="#8884d8" dataKey="value" label>
                                                     {typeData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                                 </Pie>
                                                 <Tooltip />
@@ -196,17 +201,6 @@ const AdminDashboard = () => {
                                             </PieChart>
                                         </ResponsiveContainer>
                                     </div>
-                                </div>
-                                <div style={{ gridColumn: 'span 2', background: 'white', padding: '1.5rem', borderRadius: '12px' }}>
-                                    <h3>Top Viewed Pages</h3>
-                                    <table style={{ width: '100%', marginTop: '1rem' }}>
-                                        <thead><tr style={{ textAlign: 'left' }}><th>Path</th><th>Views</th></tr></thead>
-                                        <tbody>
-                                            {views.slice(0, 10).map((v, i) => (
-                                                <tr key={i}><td style={{ padding: '0.5rem' }}>{v.path}</td><td>{v.count}</td></tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         )}

@@ -12,7 +12,7 @@ const CompaniesPage = () => {
         fetch(`${import.meta.env.VITE_API_URL}/companies`)
             .then(res => res.json())
             .then(data => {
-                setCompanies(data);
+                setCompanies(data.filter(c => c.role !== 'admin' && c.id !== 'admin-manual'));
                 setLoading(false);
             })
             .catch(err => {
