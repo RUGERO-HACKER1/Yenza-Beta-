@@ -32,6 +32,7 @@ export const initDB = async () => {
                     name VARCHAR(255),
                     role VARCHAR(50) DEFAULT 'user',
                     "isVerified" BOOLEAN DEFAULT false,
+                    "isProfileComplete" BOOLEAN DEFAULT false,
                     profile JSONB DEFAULT '{}',
                     bookmarks JSONB DEFAULT '[]',
                     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -43,6 +44,9 @@ export const initDB = async () => {
                 CREATE TABLE IF NOT EXISTS companies (
                     id SERIAL PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) UNIQUE,
+                    password VARCHAR(255),
+                    role VARCHAR(50) DEFAULT 'company',
                     description TEXT,
                     logo TEXT,
                     website VARCHAR(255),
@@ -79,23 +83,44 @@ export const initDB = async () => {
                     id SERIAL PRIMARY KEY,
                     "opportunityId" INTEGER NOT NULL,
                     "userId" VARCHAR(255),
-                    "fullName" VARCHAR(255),
-                    email VARCHAR(255),
                     details JSONB DEFAULT '{}',
-                    status VARCHAR(50) DEFAULT 'pending',
+                    status VARCHAR(50) DEFAULT 'applied',
+                    "submittedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // 5. Notifications
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id SERIAL PRIMARY KEY,
+                    "userId" VARCHAR(255) NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT,
+                    "read" BOOLEAN DEFAULT false,
                     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
 
-            // 5. Notifications/Messages Table
+            // 6. Messages (Contact Form)
             await client.query(`
-                CREATE TABLE IF NOT EXISTS notifications (
+                CREATE TABLE IF NOT EXISTS messages (
                     id SERIAL PRIMARY KEY,
-                    "userId" VARCHAR(255),
-                    message TEXT,
-                    type VARCHAR(50) DEFAULT 'info',
-                    "isRead" BOOLEAN DEFAULT false,
+                    name VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    subject VARCHAR(255),
+                    message TEXT NOT NULL,
+                    "read" BOOLEAN DEFAULT false,
                     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+
+            // 7. Page Views (Analytics)
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS page_views (
+                    id SERIAL PRIMARY KEY,
+                    path VARCHAR(255) NOT NULL,
+                    "userId" VARCHAR(255),
+                    "timestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
 

@@ -101,7 +101,7 @@ app.post('/opportunities', async (req, res) => {
             RETURNING *`,
             [
                 title, type, company || 'Hidden', companyId || 'admin-posted', location, description,
-                deadline || null, salaryRange, isFeatured || false, status || 'pending',
+                deadline || null, salaryRange, isFeatured || false, status || 'approved',
                 applicationMethod || 'platform', externalApplyUrl || null, details
             ]
         );
@@ -401,15 +401,26 @@ app.get('/admin/applications', async (req, res) => {
 // GET All Messages (Admin)
 app.get('/admin/messages', async (req, res) => {
     try {
-        // We don't have a messages table yet? 
-        // Step 148 says "skipped". Check if I implemented it.
-        // If not, returns empty array.
-        // Let's create a dummy or real query.
-        // Assuming messages table exists? No, I verified db.js in step 230 and it didn't have messages.
-        // So I'll return empty array for now to prevent 404.
-        res.json([]);
+        const result = await query("SELECT * FROM messages ORDER BY \"createdAt\" DESC");
+        res.json(result.rows);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Server Error" });
+    }
+});
+
+// POST Contact Message
+app.post('/messages', async (req, res) => {
+    const { name, email, subject, message } = req.body;
+    try {
+        await query(
+            "INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)",
+            [name, email, subject, message]
+        );
+        res.sendStatus(201);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to send message" });
     }
 });
 
