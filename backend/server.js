@@ -24,6 +24,10 @@ app.use('/uploads', express.static(UPLOADS_DIR));
 // Initialize DB on Startup
 initDB();
 
+// Job Aggregator
+import { startScheduler, runAggregator } from './services/jobAggregator.js';
+startScheduler();
+
 // Generic Upload Endpoint (Kept as File System for now, could move to S3 later)
 app.post('/upload', (req, res) => {
     const { fileBase64 } = req.body;
@@ -427,6 +431,19 @@ app.post('/messages', async (req, res) => {
     } catch (err) {
         console.error("DEBUG: Failed to save message:", err.message, err.stack);
         res.status(500).json({ message: "Failed to send message: " + err.message });
+    }
+});
+
+// MANUAL TRIGGER: Job Aggregator
+app.post('/admin/trigger-aggregation', async (req, res) => {
+    try {
+        console.log("Manually triggering job aggregation...");
+        // Run asynchronously (don't wait for it to finish to respond)
+        runAggregator();
+        res.json({ message: "Aggregator started in background. Check database in a few seconds." });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to trigger aggregator" });
     }
 });
 
