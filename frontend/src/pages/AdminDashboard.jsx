@@ -21,6 +21,7 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [applications, setApplications] = useState([]);
     const [messages, setMessages] = useState([]);
+    const [views, setViews] = useState([]);
 
     const fetchData = async () => {
         try {
@@ -36,17 +37,18 @@ const AdminDashboard = () => {
                 }
             };
 
-            const [statsData, opsData, compsData, usersData, appsData, msgsData] = await Promise.all([
+            const [statsData, opsData, compsData, usersData, appsData, msgsData, viewsData] = await Promise.all([
                 safeFetch(`${import.meta.env.VITE_API_URL}/stats`),
                 safeFetch(`${import.meta.env.VITE_API_URL}/admin/opportunities`),
                 safeFetch(`${import.meta.env.VITE_API_URL}/companies`),
                 safeFetch(`${import.meta.env.VITE_API_URL}/users`),
                 safeFetch(`${import.meta.env.VITE_API_URL}/admin/applications`),
-                safeFetch(`${import.meta.env.VITE_API_URL}/admin/messages`)
+                safeFetch(`${import.meta.env.VITE_API_URL}/admin/messages`),
+                safeFetch(`${import.meta.env.VITE_API_URL}/analytics/views`)
             ]);
 
             setStats({
-                ...statsData, // If stats fails, this might spread empty array/obj, handle carefully
+                ...statsData,
                 users: usersData.length || statsData.users || 0,
                 companies: compsData.length || statsData.companies || 0,
                 opsTotal: opsData.length || statsData.opportunities || 0,
@@ -61,6 +63,7 @@ const AdminDashboard = () => {
             setUsers(usersData);
             setApplications(appsData);
             setMessages(msgsData);
+            setViews(viewsData);
         } catch (err) {
             console.error("Error fetching admin data", err);
         } finally {
@@ -353,10 +356,28 @@ const AdminDashboard = () => {
 
                                 {/* Placeholder for Applications Trend */}
                                 <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                                    <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Application Activity</h3>
-                                    <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb', color: '#6b7280', flexDirection: 'column' }}>
-                                        <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>coming soon</p>
-                                        <span style={{ fontSize: '0.9rem' }}>Application trends over time</span>
+                                    <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Top Viewed Pages</h3>
+                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                        {views.length === 0 ? (
+                                            <p style={{ color: '#6b7280', textAlign: 'center' }}>No views recorded yet.</p>
+                                        ) : (
+                                            <table style={{ width: '100%', fontSize: '0.9rem' }}>
+                                                <thead>
+                                                    <tr style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
+                                                        <th style={{ padding: '0.5rem' }}>Path</th>
+                                                        <th style={{ padding: '0.5rem', textAlign: 'right' }}>Views</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {views.map((v, i) => (
+                                                        <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                                            <td style={{ padding: '0.5rem', color: '#374151' }}>{v.path}</td>
+                                                            <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 'bold', color: '#2563EB' }}>{v.count}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
                                     </div>
                                 </div>
                             </div>

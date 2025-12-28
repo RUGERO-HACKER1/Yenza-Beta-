@@ -96,7 +96,7 @@ const OpportunityDetailsPage = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: user.id,
+                    userId: user?.id || 'guest',
                     opportunityId: op.id,
                     ...appForm
                 })
@@ -153,6 +153,7 @@ const OpportunityDetailsPage = () => {
             case 'part-time': return 'Quick Apply ⏳';
             case 'event': return 'Register / RSVP 📅';
             case 'gig': return 'Send Offer ⚡';
+            case 'learning': return 'Enroll Now 🏫';
             default: return 'Apply Now';
         }
     };
@@ -263,9 +264,10 @@ const OpportunityDetailsPage = () => {
 
     const renderExternalApplyModal = () => {
         // Extract domain for safety display
+        const targetUrl = op.enrollLink || op.externalApplyUrl;
         let domain = 'external site';
         try {
-            domain = new URL(op.externalApplyUrl).hostname;
+            domain = new URL(targetUrl).hostname;
         } catch (e) { }
 
         const handleContinue = () => {
@@ -276,7 +278,7 @@ const OpportunityDetailsPage = () => {
                 body: JSON.stringify({ externalClicks: (op.externalClicks || 0) + 1 })
             }).catch(console.error);
 
-            window.open(op.externalApplyUrl, '_blank');
+            window.open(targetUrl, '_blank');
             setShowExternalModal(false);
         };
 
@@ -304,6 +306,101 @@ const OpportunityDetailsPage = () => {
             </div>
         );
     };
+
+    // --- LEARNING LAYOUT ---
+    if (op.type === 'learning') {
+        return (
+            <div className="container" style={{ padding: '4rem 24px', maxWidth: '1100px' }}>
+                <Link to="/opportunities" style={{ color: 'var(--text-light)', marginBottom: '1rem', display: 'inline-block' }}>&larr; Back to Opportunities</Link>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) 1fr', gap: '4rem' }}>
+                    {/* LEFT CONTENT */}
+                    <div>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+                            <span style={{ background: '#EFF6FF', color: '#1D4ED8', padding: '6px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>{op.learningType}</span>
+                            {op.scholarshipAvailable && <span style={{ background: '#FFFBEB', color: '#D97706', padding: '6px 16px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>🎓 Scholarship Available</span>}
+                        </div>
+
+                        <h1 style={{ fontSize: '2.8rem', fontWeight: '800', marginBottom: '1rem', lineHeight: 1.1 }}>{op.title}</h1>
+                        <p style={{ fontSize: '1.2rem', color: 'var(--text-light)', marginBottom: '2rem' }}>
+                            Offered by <strong style={{ color: 'var(--text-main)' }}>{op.courseProvider}</strong>
+                        </p>
+
+                        {op.bannerImage && (
+                            <img src={op.bannerImage} alt={op.title} style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '16px', marginBottom: '2.5rem', boxShadow: 'var(--shadow-md)' }} />
+                        )}
+
+                        <div style={{ marginBottom: '3rem' }}>
+                            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: 'bold' }}>About this Course</h3>
+                            <div style={{ fontSize: '1.15rem', lineHeight: '1.8', color: 'var(--text-body)', whiteSpace: 'pre-line' }}>
+                                {op.description}
+                            </div>
+                        </div>
+
+                        {op.skillsGained && (
+                            <div style={{ marginBottom: '3rem' }}>
+                                <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: 'bold' }}>Skills you'll gain</h3>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.8rem' }}>
+                                    {op.skillsGained.split(',').map((s, i) => (
+                                        <span key={i} style={{ background: '#ECFDF5', color: '#047857', padding: '8px 16px', borderRadius: '24px', fontWeight: '600', fontSize: '1rem' }}>✔ {s.trim()}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* RIGHT SIDEBAR */}
+                    <div>
+                        <div style={{ background: 'white', padding: '2rem', borderRadius: '16px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-xl)', position: 'sticky', top: '24px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <div style={{ fontSize: '2rem', fontWeight: '800', color: op.cost === 'Free' ? '#10B981' : 'var(--text-main)' }}>
+                                    {op.cost === 'Free' ? 'Free' : 'Paid'}
+                                </div>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>
+                                    {op.cost === 'Paid' ? 'Check provider site' : 'Online / Open'}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setShowExternalModal(true)}
+                                className="btn btn-primary"
+                                style={{ width: '100%', padding: '1.2rem', fontSize: '1.2rem', marginBottom: '2rem', fontWeight: 'bold', boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)' }}
+                            >
+                                Enroll on Provider Site ↗
+                            </button>
+
+                            <div style={{ display: 'grid', gap: '1.2rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: '0.8rem' }}>
+                                    <span style={{ color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '8px' }}>⏳ Duration</span>
+                                    <span style={{ fontWeight: '600' }}>{op.duration || 'Self-paced'}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: '0.8rem' }}>
+                                    <span style={{ color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '8px' }}>📍 Mode</span>
+                                    <span style={{ fontWeight: '600' }}>{op.courseMode || 'Online'}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f3f4f6', paddingBottom: '0.8rem' }}>
+                                    <span style={{ color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '8px' }}>📊 Level</span>
+                                    <span style={{ fontWeight: '600' }}>{op.experienceLevel || 'All Levels'}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.8rem' }}>
+                                    <span style={{ color: 'var(--text-light)', display: 'flex', alignItems: 'center', gap: '8px' }}>🏅 Certificate</span>
+                                    <span style={{ fontWeight: '600' }}>{op.certificateOffered ? 'Yes Included' : 'No'}</span>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+                                <button onClick={toggleBookmark} style={{ background: 'none', border: 'none', color: isSaved ? '#D97706' : 'var(--text-light)', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
+                                    {isSaved ? '⭐ Saved to Favorites' : '☆ Save for Later'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {showExternalModal && renderExternalApplyModal()}
+            </div>
+        );
+    }
 
     // --- EVENT LAYOUT ---
     if (op.type === 'event') {
@@ -363,8 +460,14 @@ const OpportunityDetailsPage = () => {
                             {hasApplied ? (
                                 <button disabled className="btn btn-secondary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', cursor: 'default', background: '#ecfdf5', color: '#047857' }}>✅ You are Registered!</button>
                             ) : (
-                                <button onClick={() => { if (!user) navigate('/user/login'); else if (user.role !== 'user') alert("Please log in as a talent to register."); else setShowModal(true); }} className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem' }}>
-                                    {op.registrationType === 'Free' ? 'Register for Free' : `Get Ticket • ${op.salaryCurrency || 'RWF'} ${op.ticketPrice}`}
+                                <button onClick={() => {
+                                    if (op.applicationMethod === 'external') {
+                                        setShowExternalModal(true);
+                                    } else {
+                                        setShowModal(true);
+                                    }
+                                }} className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem' }}>
+                                    {op.applicationMethod === 'external' ? 'Register on External Site ↗' : (op.registrationType === 'Free' ? 'Register for Free' : `Get Ticket • ${op.salaryCurrency || 'RWF'} ${op.ticketPrice}`)}
                                 </button>
                             )}
 
@@ -481,16 +584,7 @@ const OpportunityDetailsPage = () => {
                     <button disabled className="btn btn-secondary" style={{ padding: '0.75rem 2rem', fontSize: '1.1rem', cursor: 'default', background: '#DEF7EC', color: '#03543F' }}>{op.type === 'event' ? '✅ Registered' : '✅ Application Sent'}</button>
                 ) : (
                     <button onClick={() => {
-                        // Enforce Auth for ALL flows (Internal & External)
-                        if (!user) {
-                            navigate('/user/login');
-                            return;
-                        }
-                        if (user.role !== 'user' && user.role !== 'admin') { // Admins can test too
-                            alert("Please log in as a talent to apply.");
-                            return;
-                        }
-
+                        // Guest Apply Allowed
                         if (op.applicationMethod === 'external') {
                             setShowExternalModal(true);
                         } else {

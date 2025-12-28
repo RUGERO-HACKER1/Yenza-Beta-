@@ -214,6 +214,66 @@ const LandingPage = () => {
                     <Link to="/companies" className="btn btn-primary" style={{ padding: '1rem 3rem', fontSize: '1.1rem' }}>Get Started for Companies</Link>
                 </div>
             </section>
+
+            {/* CONTACT / HIRE US / FEEDBACK SECTION */}
+            <section style={{ padding: '6rem 0', background: 'white', borderTop: '1px solid var(--border)' }}>
+                <div className="container" style={{ maxWidth: '800px' }}>
+                    <div className="section-title">
+                        <h2>Have a Project or Feedback? 💌</h2>
+                        <p>We'd love to hear from you. Whether you want to hire us to build a platform or just say hi.</p>
+                    </div>
+
+                    <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+                        const data = Object.fromEntries(formData.entries());
+                        try {
+                            const res = await fetch(`${import.meta.env.VITE_API_URL}/messages`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(data)
+                            });
+                            if (res.ok) {
+                                alert("Message sent! We'll get back to you soon.");
+                                e.target.reset();
+                            } else {
+                                alert("Failed to send message.");
+                            }
+                        } catch (err) {
+                            alert("Error sending message.");
+                        }
+                    }} style={{ background: '#F9FAFB', padding: '2.5rem', borderRadius: '16px', border: '1px solid var(--border)', display: 'grid', gap: '1.5rem', boxShadow: 'var(--shadow-lg)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Your Name *</label>
+                                <input name="name" required placeholder="John Doe" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #D1D5DB' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Email Address *</label>
+                                <input name="email" required type="email" placeholder="john@example.com" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #D1D5DB' }} />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Subject / Service</label>
+                            <select name="subject" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #D1D5DB' }}>
+                                <option>General Feedback</option>
+                                <option>I want to Hire Yenza Team (Build a Platform)</option>
+                                <option>Report a Bug</option>
+                                <option>Partnership Inquiry</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Message *</label>
+                            <textarea name="message" required rows="5" placeholder="Tell us more..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #D1D5DB' }}></textarea>
+                        </div>
+
+                        <button type="submit" className="btn btn-primary" style={{ padding: '1rem', fontSize: '1.1rem', fontWeight: 'bold' }}>Send Message 🚀</button>
+                    </form>
+                </div>
+            </section>
         </div>
     );
 };

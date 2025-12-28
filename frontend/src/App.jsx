@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useAuth } from './context/AuthContext';
 import Layout from './components/layout/Layout';
 import LandingPage from './pages/LandingPage';
 import OpportunitiesPage from './pages/OpportunitiesPage';
@@ -25,10 +27,27 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ContactPage from './pages/ContactPage';
 
+// Helper to track views
+function PageTracker() {
+  const location = useLocation();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/track-view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: location.pathname, userId: user?.id })
+    }).catch(e => console.warn("Track error", e));
+  }, [location, user]);
+
+  return null;
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <PageTracker />
         <Layout>
           <Routes>
             <Route path="/" element={<LandingPage />} />

@@ -75,7 +75,17 @@ const PostOpportunityPage = () => {
 
         // --- PHASE 18: EXTERNAL APPLY ---
         applicationMethod: 'platform', // 'platform' or 'external'
-        externalApplyUrl: ''
+        externalApplyUrl: '',
+
+        // --- PHASE 19: LEARNING / COURSE ---
+        learningType: 'Course', // Course, Bootcamp, Certification, Training Program
+        courseProvider: '', // e.g. Coursera, ALX
+        courseMode: 'Online', // Online, In-person, Hybrid
+        certificateOffered: false,
+        cost: 'Free', // Free, Paid
+        scholarshipAvailable: false,
+        skillsGained: '', // Comma separated
+        enrollLink: '' // similar to externalApplyUrl but specific for learning
     });
 
     // Speaker Input State
@@ -95,11 +105,12 @@ const PostOpportunityPage = () => {
 
     const handleTypeSelect = (type) => {
         // --- VERIFICATION GATE ---
-        if (type === 'job' || type === 'internship' || type === 'part-time' || type === 'event' || type === 'gig') {
+        // --- VERIFICATION GATE ---
+        if (type === 'job' || type === 'internship' || type === 'part-time' || type === 'event' || type === 'gig' || type === 'learning') {
             const isCompany = user && !user.role;
             if (user && user.id !== 'admin-manual' && user.role !== 'admin') {
                 if (!user.role && !user.isVerified) {
-                    alert(`🔒 Verification Required\n\nTo post Official Opportunities or Gigs, your company must be verified. Please complete your profile or contact support.`);
+                    alert(`🔒 Verification Required\n\nTo post Official Opportunities, Gigs, or Courses, your company must be verified. Please complete your profile or contact support.`);
                     return;
                 }
             }
@@ -168,6 +179,8 @@ const PostOpportunityPage = () => {
             salaryString = formData.registrationType === 'Free' ? 'Free' : `${formData.salaryCurrency} ${Number(formData.ticketPrice).toLocaleString()}`;
         } else if (selectedType === 'gig') {
             salaryString = `${formData.salaryCurrency} ${Number(formData.budget).toLocaleString()}`;
+        } else if (selectedType === 'learning') {
+            salaryString = formData.cost; // Free or Paid
         }
 
         const payload = {
@@ -235,6 +248,7 @@ const PostOpportunityPage = () => {
                 {renderTypeCard('part-time', 'Part-Time', 'Flexible hours for flexible workers.', '⏳')}
                 {renderTypeCard('event', 'Event / Workshop', 'Webinars, meetups, and training sessions.', '📅')}
                 {renderTypeCard('gig', 'Gig / Micro-task', 'One-off tasks with fixed budgets.', '⚡')}
+                {renderTypeCard('learning', 'Learning / Course', 'Courses, Bootcamps, and Certificates.', '📚')}
             </div>
             {user && !user.isVerified && !user.role && (
                 <div style={{ marginTop: '2rem', padding: '1rem', background: '#FEF3C7', color: '#B45309', borderRadius: '8px', textAlign: 'center' }}>
@@ -288,11 +302,11 @@ const PostOpportunityPage = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Title *</label>
-                        <input className="input" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder={selectedType === 'gig' ? "e.g. Logo Design" : "e.g. Marketing Assistant"} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                        <input className="input" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder={selectedType === 'gig' ? "e.g. Logo Design" : "e.g. Marketing Assistant"} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>{selectedType === 'event' ? 'Organizer' : 'Company'}</label>
-                        <input className="input" required value={selectedType === 'event' ? formData.organizer : formData.company} onChange={e => setFormData({ ...formData, [selectedType === 'event' ? 'organizer' : 'company']: e.target.value })} disabled={!!user && user.role !== 'admin'} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db', background: (user && user.role !== 'admin') ? '#f3f4f6' : 'white' }} />
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>{selectedType === 'event' ? 'Organizer' : selectedType === 'learning' ? 'Provider / Organization' : 'Company'}</label>
+                        <input className="input" value={selectedType === 'event' ? formData.organizer : selectedType === 'learning' ? formData.courseProvider : formData.company} onChange={e => setFormData({ ...formData, [selectedType === 'event' ? 'organizer' : selectedType === 'learning' ? 'courseProvider' : 'company']: e.target.value })} disabled={!!user && user.role !== 'admin'} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db', background: (user && user.role !== 'admin') ? '#f3f4f6' : 'white' }} />
                     </div>
                 </div>
 
@@ -332,7 +346,7 @@ const PostOpportunityPage = () => {
                             <input
                                 type="url"
                                 className="input"
-                                required
+
                                 placeholder="https://company.com/careers/job123"
                                 value={formData.externalApplyUrl}
                                 onChange={e => setFormData({ ...formData, externalApplyUrl: e.target.value })}
@@ -383,7 +397,7 @@ const PostOpportunityPage = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Hours per Week</label>
-                                    <input className="input" required value={formData.hoursPerWeek} onChange={e => setFormData({ ...formData, hoursPerWeek: e.target.value })} placeholder="e.g. 10-20 hrs" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                    <input className="input" value={formData.hoursPerWeek} onChange={e => setFormData({ ...formData, hoursPerWeek: e.target.value })} placeholder="e.g. 10-20 hrs" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Schedule Type</label>
@@ -417,7 +431,7 @@ const PostOpportunityPage = () => {
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Amount</label>
-                                    <input type="number" required value={formData.payAmount} onChange={e => setFormData({ ...formData, payAmount: e.target.value })} placeholder="e.g. 5000" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                    <input type="number" value={formData.payAmount} onChange={e => setFormData({ ...formData, payAmount: e.target.value })} placeholder="e.g. 5000" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
                             </div>
                         </div>
@@ -519,7 +533,7 @@ const PostOpportunityPage = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Duration</label>
-                                <input className="input" required value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g. 3 Months" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                <input className="input" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g. 3 Months" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Start Date</label>
@@ -614,11 +628,11 @@ const PostOpportunityPage = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Start Date & Time</label>
-                                    <input type="datetime-local" className="input" required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                    <input type="datetime-local" className="input" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>End Date & Time</label>
-                                    <input type="datetime-local" className="input" required value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                    <input type="datetime-local" className="input" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
                             </div>
                         </div>
@@ -627,7 +641,7 @@ const PostOpportunityPage = () => {
                         {formData.locationType !== 'In-Person' && (
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Online Meeting Link (Zoom/Meet)</label>
-                                <input className="input" required value={formData.eventLink} onChange={e => setFormData({ ...formData, eventLink: e.target.value })} placeholder="https://zoom.us/..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                <input className="input" value={formData.eventLink} onChange={e => setFormData({ ...formData, eventLink: e.target.value })} placeholder="https://zoom.us/..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                             </div>
                         )}
 
@@ -643,7 +657,7 @@ const PostOpportunityPage = () => {
                             {formData.registrationType === 'Paid' && (
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Ticket Price ({formData.salaryCurrency})</label>
-                                    <input type="number" required value={formData.ticketPrice} onChange={e => setFormData({ ...formData, ticketPrice: e.target.value })} placeholder="5000" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                    <input type="number" value={formData.ticketPrice} onChange={e => setFormData({ ...formData, ticketPrice: e.target.value })} placeholder="5000" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                                 </div>
                             )}
                         </div>
@@ -670,113 +684,183 @@ const PostOpportunityPage = () => {
                     </>
                 )}
 
-                {/* --- GIG SPECIFIC --- */}
-                {selectedType === 'gig' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Budget (Fixed)</label>
-                            <input className="input" required value={formData.budget} onChange={e => setFormData({ ...formData, budget: e.target.value })} placeholder="e.g. $500" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Deliverables</label>
-                            <input className="input" required value={formData.deliverables} onChange={e => setFormData({ ...formData, deliverables: e.target.value })} placeholder="e.g. 3 Logo Variations" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-                        </div>
-                    </div>
-                )}
+
+
+
+                {/* --- LEARNING SPECIFIC --- */}
+                {
+                    selectedType === 'learning' && (
+                        <>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Learning Type</label>
+                                    <select value={formData.learningType} onChange={e => setFormData({ ...formData, learningType: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                                        <option>Course</option>
+                                        <option>Bootcamp</option>
+                                        <option>Certification</option>
+                                        <option>Training Program</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Mode</label>
+                                    <select value={formData.courseMode} onChange={e => setFormData({ ...formData, courseMode: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                                        <option>Online</option>
+                                        <option>In-person</option>
+                                        <option>Hybrid</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Cost</label>
+                                    <select value={formData.cost} onChange={e => setFormData({ ...formData, cost: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                                        <option>Free</option>
+                                        <option>Paid</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Duration</label>
+                                    <input className="input" value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g. 6 Weeks" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Level (Optional)</label>
+                                    <select value={formData.experienceLevel} onChange={e => setFormData({ ...formData, experienceLevel: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                                        <option>Beginner</option>
+                                        <option>Intermediate</option>
+                                        <option>Advanced</option>
+                                        <option>All Levels</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem', background: '#F0F9FF', padding: '1.5rem', borderRadius: '8px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={formData.certificateOffered} onChange={e => setFormData({ ...formData, certificateOffered: e.target.checked })} style={{ width: '20px', height: '20px' }} />
+                                    <span style={{ fontWeight: '500' }}>Certificate Offered? 📜</span>
+                                </label>
+
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={formData.scholarshipAvailable} onChange={e => setFormData({ ...formData, scholarshipAvailable: e.target.checked })} style={{ width: '20px', height: '20px' }} />
+                                    <span style={{ fontWeight: '500' }}>Scholarships Available? 🎓</span>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Skills Gained (Optional)</label>
+                                <input className="input" value={formData.skillsGained} onChange={e => setFormData({ ...formData, skillsGained: e.target.value })} placeholder="e.g. React, UI Design, Project Management" style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Enroll / Apply Link *</label>
+                                <input type="url" className="input" value={formData.enrollLink} onChange={e => setFormData({ ...formData, enrollLink: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                                <div style={{ fontSize: '0.85rem', color: '#B45309', marginTop: '0.5rem', background: '#FEF3C7', padding: '0.5rem', borderRadius: '6px' }}>
+                                    🔗 <strong>Learning Posts Redirect:</strong> This button will say "Enroll on Provider Site".
+                                </div>
+                            </div>
+                        </>
+                    )
+                }
 
 
                 {/* 3. COMMON FIELDS & DEEP FIELDS (Location, Desc, Link, Deadline) */}
                 <div>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Location (City/Area)</label>
-                    <input className="input" required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} placeholder="e.g. Remote, Kigali, etc." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                    <input className="input" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} placeholder="e.g. Remote, Kigali, etc." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
                 </div>
 
                 <div>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Description (Introduction) *</label>
-                    <textarea className="input" required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={5} placeholder="General overview of the role or opportunity..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
+                    <textarea className="input" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={5} placeholder="General overview of the role or opportunity..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
                 </div>
 
                 {/* --- JOB DEEP FIELDS --- */}
-                {selectedType === 'job' && (
-                    <>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Key Responsibilities</label>
-                            <textarea className="input" value={formData.responsibilities} onChange={e => setFormData({ ...formData, responsibilities: e.target.value })} rows={4} placeholder="- Lead the design team..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Requirements / Qualifications</label>
-                            <textarea className="input" value={formData.requirements} onChange={e => setFormData({ ...formData, requirements: e.target.value })} rows={4} placeholder="- 5+ years of experience..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
-                        </div>
-
-                        {/* Benefits */}
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Benefits & Perks</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
-                                {benefitOptions.map(b => (
-                                    <label key={b} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
-                                        <input type="checkbox" checked={formData.benefits.includes(b)} onChange={() => toggleBenefit(b)} />
-                                        {b}
-                                    </label>
-                                ))}
+                {
+                    selectedType === 'job' && (
+                        <>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Key Responsibilities</label>
+                                <textarea className="input" value={formData.responsibilities} onChange={e => setFormData({ ...formData, responsibilities: e.target.value })} rows={4} placeholder="- Lead the design team..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
                             </div>
-                        </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Requirements / Qualifications</label>
+                                <textarea className="input" value={formData.requirements} onChange={e => setFormData({ ...formData, requirements: e.target.value })} rows={4} placeholder="- 5+ years of experience..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
+                            </div>
 
-                        {/* Detailed Salary */}
-                        <div style={{ background: '#f9fafb', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500', marginBottom: '1rem' }}>
-                                <input type="checkbox" checked={formData.isSalaryDisclosed} onChange={e => setFormData({ ...formData, isSalaryDisclosed: e.target.checked })} />
-                                Disclose Salary? (Highly Recommended)
-                            </label>
-                            {formData.isSalaryDisclosed && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: '1rem' }}>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>Currency</label>
-                                        <select value={formData.salaryCurrency} onChange={e => setFormData({ ...formData, salaryCurrency: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}>
-                                            <option>RWF</option>
-                                            <option>USD</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>Min</label>
-                                        <input type="number" value={formData.salaryMin} onChange={e => setFormData({ ...formData, salaryMin: e.target.value })} placeholder="e.g. 500000" style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }} />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>Max (Optional)</label>
-                                        <input type="number" value={formData.salaryMax} onChange={e => setFormData({ ...formData, salaryMax: e.target.value })} placeholder="e.g. 1000000" style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }} />
-                                    </div>
+                            {/* Benefits */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Benefits & Perks</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                                    {benefitOptions.map(b => (
+                                        <label key={b} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={formData.benefits.includes(b)} onChange={() => toggleBenefit(b)} />
+                                            {b}
+                                        </label>
+                                    ))}
                                 </div>
-                            )}
-                        </div>
-                    </>
-                )}
+                            </div>
+
+                            {/* Detailed Salary */}
+                            <div style={{ background: '#f9fafb', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '500', marginBottom: '1rem' }}>
+                                    <input type="checkbox" checked={formData.isSalaryDisclosed} onChange={e => setFormData({ ...formData, isSalaryDisclosed: e.target.checked })} />
+                                    Disclose Salary? (Highly Recommended)
+                                </label>
+                                {formData.isSalaryDisclosed && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: '1rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>Currency</label>
+                                            <select value={formData.salaryCurrency} onChange={e => setFormData({ ...formData, salaryCurrency: e.target.value })} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }}>
+                                                <option>RWF</option>
+                                                <option>USD</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>Min</label>
+                                            <input type="number" value={formData.salaryMin} onChange={e => setFormData({ ...formData, salaryMin: e.target.value })} placeholder="e.g. 500000" style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>Max (Optional)</label>
+                                            <input type="number" value={formData.salaryMax} onChange={e => setFormData({ ...formData, salaryMax: e.target.value })} placeholder="e.g. 1000000" style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #d1d5db' }} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )
+                }
 
                 {/* --- INTERNSHIP LEARNING OUTCOMES (REQUIRED) --- */}
-                {selectedType === 'internship' && (
-                    <>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Learning Outcomes (What will they learn?) *</label>
-                            <textarea className="input" required value={formData.learningOutcomes} onChange={e => setFormData({ ...formData, learningOutcomes: e.target.value })} rows={4} placeholder="- Practical experience with React..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Required Skills / Basics *</label>
-                            <textarea className="input" required value={formData.requirements} onChange={e => setFormData({ ...formData, requirements: e.target.value })} rows={3} placeholder="- Basic JavaScript knowledge..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
-                        </div>
-                    </>
-                )}
+                {
+                    selectedType === 'internship' && (
+                        <>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Learning Outcomes (What will they learn?) *</label>
+                                <textarea className="input" value={formData.learningOutcomes} onChange={e => setFormData({ ...formData, learningOutcomes: e.target.value })} rows={4} placeholder="- Practical experience with React..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Required Skills / Basics *</label>
+                                <textarea className="input" value={formData.requirements} onChange={e => setFormData({ ...formData, requirements: e.target.value })} rows={3} placeholder="- Basic JavaScript knowledge..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }}></textarea>
+                            </div>
+                        </>
+                    )
+                }
 
-                {/* Deadline & Link */}
-                {selectedType !== 'event' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Application Method / Link</label>
-                            <input className="input" required={selectedType === 'job'} value={formData.applyLink} onChange={e => setFormData({ ...formData, applyLink: e.target.value })} placeholder="e.g. https://... or mailto:..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                {/* Deadline & Link (Common) */}
+                {
+                    selectedType !== 'event' && selectedType !== 'learning' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Application Method / Link</label>
+                                <input className="input" value={formData.applyLink} onChange={e => setFormData({ ...formData, applyLink: e.target.value })} placeholder="e.g. https://... or mailto:..." style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Deadline</label>
+                                <input type="date" className="input" value={formData.deadline} onChange={e => setFormData({ ...formData, deadline: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Deadline</label>
-                            <input type="date" className="input" value={formData.deadline} onChange={e => setFormData({ ...formData, deadline: e.target.value })} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #d1d5db' }} />
-                        </div>
-                    </div>
-                )}
+                    )
+                }
 
                 <div>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Tags</label>
@@ -792,8 +876,8 @@ const PostOpportunityPage = () => {
                     )}
                 </div>
 
-            </form>
-        </div>
+            </form >
+        </div >
     );
 
     if (!user) {

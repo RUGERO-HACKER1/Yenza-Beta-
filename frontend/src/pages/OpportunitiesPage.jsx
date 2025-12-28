@@ -105,9 +105,9 @@ const OpportunitiesPage = () => {
                     <p style={{ fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-light)', textTransform: 'uppercase' }}>Type</p>
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <button onClick={() => handleTypeToggle('all')} className={`btn ${selectedTypes.includes('all') ? 'btn-secondary' : 'btn-outline'}`} style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}>All Types</button>
-                        {['job', 'internship', 'part-time', 'event', 'gig'].map(type => (
+                        {['job', 'internship', 'part-time', 'event', 'gig', 'learning'].map(type => (
                             <button key={type} onClick={() => handleTypeToggle(type)} className={`btn ${selectedTypes.includes(type) ? 'btn-secondary' : 'btn-outline'}`} style={{ padding: '0.4rem 1rem', fontSize: '0.9rem', textTransform: 'capitalize' }}>
-                                {selectedTypes.includes(type) && <span style={{ marginRight: '4px' }}>✓</span>} {type}
+                                {selectedTypes.includes(type) && <span style={{ marginRight: '4px' }}>✓</span>} {selectedTypes.includes(type) && type === 'learning' ? 'Learning / Course' : type}
                             </button>
                         ))}
                     </div>
@@ -201,7 +201,7 @@ const OpportunitiesPage = () => {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                                     <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '1px solid var(--border)' }}>
                                         {/* Logo Placeholder or Op Type Icon */}
-                                        {companyMap[op.companyId]?.logo ? <img src={companyMap[op.companyId].logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} /> : (op.type === 'job' ? '💼' : op.type === 'part-time' ? '⏳' : op.type === 'gig' ? '⚡' : '🎓')}
+                                        {companyMap[op.companyId]?.logo ? <img src={companyMap[op.companyId].logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} /> : (op.type === 'job' ? '💼' : op.type === 'part-time' ? '⏳' : op.type === 'gig' ? '⚡' : op.type === 'learning' ? '📚' : '🎓')}
                                     </div>
                                     <span className={`tag tag-${op.type}`}>{op.type}</span>
                                 </div>
@@ -218,6 +218,15 @@ const OpportunitiesPage = () => {
                                 {(op.employmentType || op.locationType || op.salaryRange || op.internshipType || op.duration || op.scheduleType) && (
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-body)' }}>
                                         {op.employmentType && <span style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px' }}>{op.employmentType}</span>}
+
+                                        {/* Learning Specifics */}
+                                        {op.learningType && <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '2px 6px', borderRadius: '4px' }}>{op.learningType}</span>}
+                                        {op.courseMode && <span style={{ background: '#f3f4f6', padding: '2px 6px', borderRadius: '4px' }}>{op.courseMode}</span>}
+                                        {op.type === 'learning' && (
+                                            <span style={{ background: op.cost === 'Free' ? '#dcfce7' : '#f3f4f6', color: op.cost === 'Free' ? '#15803d' : '#374151', padding: '2px 6px', borderRadius: '4px', fontWeight: '500' }}>
+                                                {op.cost}
+                                            </span>
+                                        )}
 
                                         {/* Internship Specifics */}
                                         {op.internshipType && <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '2px 6px', borderRadius: '4px' }}>{op.internshipType}</span>}
