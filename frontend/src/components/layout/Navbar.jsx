@@ -4,39 +4,13 @@ import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const [showNotif, setShowNotif] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // Mobile Toggle
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const fetchNotifications = () => {
-    if (user) {
-      fetch(`${import.meta.env.VITE_API_URL}/notifications?userId=${user.id}`)
-        .then(res => res.json())
-        .then(data => {
-          setNotifications(data);
-          setUnreadCount(data.filter(n => !n.read).length);
-        });
-    }
-  };
-
+  // Close mobile menu when route changes
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 5000); // Polling every 5s
-      return () => clearInterval(interval);
-    }
-  }, [user]);
-
-  const markRead = (id) => {
-    fetch(`http://localhost:5000/notifications/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ read: true })
-    }).then(() => {
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    });
-  }
+    setIsMobileMenuOpen(false);
+  }, [window.location.pathname]);
 
   return (
     <nav style={{
@@ -46,22 +20,23 @@ const Navbar = () => {
       backdropFilter: 'blur(12px)',
       position: 'sticky',
       top: 0,
-      zIndex: 100
+      zIndex: 1000 // Increased Z-Index
     }}>
       <div className="container" style={{
         height: '100%',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        position: 'relative'
       }}>
         {/* Logo */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/img/logo.svg" alt="Yenza Logo" style={{ height: '40px' }} />
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 1002 }}>
+          <img src="/img/logo.svg" alt="Yenza Logo" style={{ height: '36px' }} />
           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--primary)', background: '#EEF2FF', padding: '2px 8px', borderRadius: '12px', border: '1px solid #C7D2FE' }}>BETA</span>
         </Link>
 
-        {/* Links */}
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+        {/* --- DESKTOP NAV --- */}
+        <div className="desktop-nav" style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
           <Link to="/opportunities" style={{ fontWeight: '500', fontSize: '0.95rem', color: 'var(--text-body)' }}>Explore</Link>
           <Link to="/events" style={{ fontWeight: '500', fontSize: '0.95rem', color: 'var(--text-body)' }}>Events</Link>
           <Link to="/companies" style={{ fontWeight: '500', fontSize: '0.95rem', color: 'var(--text-body)' }}>For Companies</Link>
@@ -139,7 +114,7 @@ const Navbar = () => {
               <button
                 onClick={() => {
                   logout();
-                  window.location.href = '/'; // Force a hard refresh/navigate to clear state cleanly
+                  window.location.href = '/';
                 }}
                 className="btn btn-outline"
                 style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
@@ -156,7 +131,62 @@ const Navbar = () => {
             </div>
           )}
         </div>
+
+        {/* --- MOBILE HAMBURGER --- */}
+        <button
+          className="mobile-toggle"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          style={{ zIndex: 1002, fontSize: '1.5rem', padding: '0.5rem', display: 'none' }} // Visible via CSS
+        >
+          {isMobileMenuOpen ? '✕' : '☰'}
+        </button>
+
+        {/* --- MOBILE MENU OVERLAY --- */}
+        {isMobileMenuOpen && (
+          <div className="mobile-menu" style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            background: 'white', zIndex: 1001, paddingTop: '80px', paddingLeft: '24px', paddingRight: '24px',
+            display: 'flex', flexDirection: 'column', gap: '2rem'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', fontSize: '1.25rem', fontWeight: 'bold' }}>
+              <Link to="/opportunities" onClick={() => setIsMobileMenuOpen(false)}>Explore Opportunities</Link>
+              <Link to="/events" onClick={() => setIsMobileMenuOpen(false)}>Events</Link>
+              <Link to="/companies" onClick={() => setIsMobileMenuOpen(false)}>For Companies</Link>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: 0 }} />
+
+            {user ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-light)' }}>
+                  Signed in as <strong>{user.name}</strong>
+                </div>
+                {user.role === 'admin' ? (
+                  <Link to="/admin" className="btn btn-primary" onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
+                ) : user.role === 'user' ? (
+                  <Link to="/profile" className="btn btn-primary" onClick={() => setIsMobileMenuOpen(false)}>My Profile</Link>
+                ) : (
+                  <Link to="/dashboard" className="btn btn-primary" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
+                )}
+                <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="btn btn-outline" style={{ justifyContent: 'flex-start' }}>Log Out</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <Link to="/login" className="btn btn-outline" style={{ justifyContent: 'center' }} onClick={() => setIsMobileMenuOpen(false)}>Log In</Link>
+                <Link to="/signup" className="btn btn-primary" style={{ justifyContent: 'center' }} onClick={() => setIsMobileMenuOpen(false)}>Sign Up</Link>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
+
+      <style>{`
+         @media (max-width: 768px) {
+             .desktop-nav { display: none !important; }
+             .mobile-toggle { display: block !important; }
+         }
+      `}</style>
     </nav>
   );
 };

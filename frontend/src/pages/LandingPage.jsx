@@ -35,11 +35,14 @@ const LandingPage = () => {
             }}>
                 <div className="container" style={{ maxWidth: '1000px', position: 'relative', paddingBottom: '6rem' }}>
                     {/* Floating Elements (Decorative) */}
-                    <div style={{ position: 'absolute', top: '10%', left: '-5%', background: 'white', padding: '1rem', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', transform: 'rotate(-10deg)', zIndex: 0 }}>
-                        <span style={{ fontSize: '1.5rem' }}>👩‍💻</span> <strong>Developer</strong> just hired!
-                    </div>
-                    <div style={{ position: 'absolute', top: '20%', right: '-5%', background: 'white', padding: '1rem', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', transform: 'rotate(5deg)', zIndex: 0 }}>
-                        <span style={{ fontSize: '1.5rem' }}>💰</span> <strong>New Gig</strong> posted!
+                    {/* Floating Elements (Decorative) - Hidden on Mobile */}
+                    <div className="hero-floating">
+                        <div style={{ position: 'absolute', top: '10%', left: '-5%', background: 'white', padding: '1rem', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', transform: 'rotate(-10deg)', zIndex: 0 }}>
+                            <span style={{ fontSize: '1.5rem' }}>👩‍💻</span> <strong>Developer</strong> just hired!
+                        </div>
+                        <div style={{ position: 'absolute', top: '20%', right: '-5%', background: 'white', padding: '1rem', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', transform: 'rotate(5deg)', zIndex: 0 }}>
+                            <span style={{ fontSize: '1.5rem' }}>💰</span> <strong>New Gig</strong> posted!
+                        </div>
                     </div>
 
                     <div style={{ position: 'relative', zIndex: 1 }}>
@@ -72,13 +75,14 @@ const LandingPage = () => {
                 </div>
 
                 {/* STATS STRIP (Dynamic) */}
+                {/* STATS STRIP (Dynamic) */}
                 <div style={{ background: 'white', borderTop: '1px solid #e5e7eb', padding: '2rem 0' }}>
-                    <div className="container" style={{ display: 'flex', justifyContent: 'center', gap: '4rem', flexWrap: 'wrap' }}>
+                    <div className="container stats-container">
                         <div style={{ textAlign: 'center' }}>
                             <h3 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#1F2937', marginBottom: '0' }}>Growing</h3>
                             <p style={{ color: '#6B7280', fontWeight: '500' }}>Talents Joined</p>
                         </div>
-                        <div style={{ textAlign: 'center', borderLeft: '1px solid #e5e7eb', borderRight: '1px solid #e5e7eb', padding: '0 4rem' }}>
+                        <div className="stats-divider" style={{ textAlign: 'center', padding: '0 4rem' }}>
                             <h3 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--primary)', marginBottom: '0' }}>Curated</h3>
                             <p style={{ color: '#6B7280', fontWeight: '500' }}>Opportunities</p>
                         </div>
@@ -335,6 +339,17 @@ const LandingPage = () => {
                     </form>
                 </div>
             </section>
+            {/* Landing Page Styles */}
+            <style>{`
+                .stats-container { display: flex; justify-content: center; gap: 4rem; flex-wrap: wrap; }
+                .stats-divider { border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; }
+                
+                @media (max-width: 768px) {
+                    .hero-floating { display: none; }
+                    .stats-container { gap: 2rem; flex-direction: column; }
+                    .stats-divider { border: none; padding: 2rem 0 !important; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+                }
+            `}</style>
         </div>
     );
 };

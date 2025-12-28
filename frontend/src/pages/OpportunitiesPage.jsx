@@ -307,7 +307,7 @@ const OpportunitiesPage = () => {
 
                 .grid-cards {
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                     gap: 1.5rem;
                 }
 
@@ -356,6 +356,8 @@ const OpportunitiesPage = () => {
                 @media (max-width: 640px) {
                     .container { padding: 1.5rem 16px !important; }
                     .grid-cards { grid-template-columns: 1fr; }
+                    .student-toggle { width: 100%; justify-content: center; margin-top: 0.5rem; }
+                    .filter-card { padding: 1rem; }
                 }
             `}</style>
         </div>

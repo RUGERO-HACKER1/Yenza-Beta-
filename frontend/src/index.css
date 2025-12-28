@@ -290,3 +290,22 @@ textarea:focus {
     padding: 0 16px;
   }
 }
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .section-title {
+    margin-bottom: 2rem;
+  }
+}
