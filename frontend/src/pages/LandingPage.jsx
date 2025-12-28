@@ -90,52 +90,63 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* GIG ECONOMY BANNER (Pipeline 3) */}
+            {/* GIG ECONOMY BANNER (Premium Polish) */}
             <section className="container" style={{ marginBottom: '6rem' }}>
                 <div style={{
-                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    background: 'linear-gradient(120deg, #059669 0%, #10B981 100%)',
                     borderRadius: '24px',
-                    padding: '3rem',
+                    padding: '4rem',
                     color: 'white',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: '2rem',
-                    boxShadow: '0 20px 25px -5px rgba(16, 185, 129, 0.3)'
+                    boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.25)',
+                    position: 'relative',
+                    overflow: 'hidden'
                 }}>
-                    <div style={{ flex: 1, minWidth: '300px' }}>
+                    {/* Decorative Circle */}
+                    <div style={{ position: 'absolute', top: '-50%', right: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)', borderRadius: '50%' }}></div>
+
+                    <div style={{ flex: 1, minWidth: '300px', position: 'relative', zIndex: 1 }}>
                         <span style={{
                             background: 'rgba(255,255,255,0.2)',
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '20px',
-                            fontSize: '0.8rem',
-                            fontWeight: 'bold',
-                            letterSpacing: '0.05em'
+                            backdropFilter: 'blur(10px)',
+                            padding: '0.4rem 1rem',
+                            borderRadius: '99px',
+                            fontSize: '0.85rem',
+                            fontWeight: '800',
+                            letterSpacing: '0.05em',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
                         }}>
-                            NEW: GIG ECONOMY
+                            ⚡ NEW: GIG ECONOMY
                         </span>
-                        <h2 style={{ fontSize: '2.5rem', fontWeight: '800', margin: '1rem 0 0.5rem', lineHeight: '1.2' }}>
+                        <h2 style={{ fontSize: '3rem', fontWeight: '800', margin: '1.5rem 0 1rem', lineHeight: '1.1' }}>
                             Turn your skills into income.
                         </h2>
-                        <p style={{ fontSize: '1.1rem', opacity: '0.9' }}>
+                        <p style={{ fontSize: '1.25rem', opacity: '0.95', fontWeight: '500', maxWidth: '500px' }}>
                             Post a service or find short-term work. Get paid today.
                         </p>
                     </div>
-                    <div>
-                        <Link to="/post-opportunity" className="btn" style={{
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <div className="btn" style={{
                             background: 'white',
-                            color: '#059669',
-                            padding: '1rem 2rem',
+                            color: '#10B981', // Darker green for text
+                            padding: '1.2rem 2.5rem',
                             fontSize: '1.1rem',
-                            fontWeight: 'bold',
+                            fontWeight: '800',
                             border: 'none',
+                            borderRadius: '16px',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.5rem'
+                            gap: '0.75rem',
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                            cursor: 'default', // Unclickable
+                            opacity: '0.9'
                         }}>
                             Submit a Gig → Earn Money Today
-                        </Link>
+                        </div>
                     </div>
                 </div>
             </section>

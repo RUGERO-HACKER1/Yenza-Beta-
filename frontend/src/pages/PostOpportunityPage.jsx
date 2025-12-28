@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const PostOpportunityPage = () => {
-    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { user } = useAuth();
 
+    // Lazy Init: Check URL for type immediately
+    const urlType = searchParams.get('type');
 
-
-    const [step, setStep] = useState(1);
-    const [selectedType, setSelectedType] = useState(null);
+    const [step, setStep] = useState(urlType ? 2 : 1);
+    const [selectedType, setSelectedType] = useState(urlType || null);
     const [submitting, setSubmitting] = useState(false);
 
     // Initial State
@@ -121,6 +122,8 @@ const PostOpportunityPage = () => {
 
         if (type === 'event') setFormData(prev => ({ ...prev, applyLink: '' }));
     };
+
+    // (useEffect removed - using lazy init instead)
 
     const addSpeaker = () => {
         if (speakerInput.name && speakerInput.role) {
