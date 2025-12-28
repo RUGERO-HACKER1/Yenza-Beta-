@@ -116,6 +116,39 @@ app.post('/opportunities', async (req, res) => {
     }
 });
 
+// PATCH Opportunity (Admin: Approve, Reject, Feature)
+app.patch('/admin/opportunities/:id', async (req, res) => {
+    const { status, isFeatured } = req.body;
+    try {
+        let queryText = "UPDATE opportunities SET ";
+        const values = [];
+        const setClauses = [];
+        let index = 1;
+
+        if (status) {
+            setClauses.push(`status = $${index++}`);
+            values.push(status);
+        }
+        if (typeof isFeatured === 'boolean') {
+            setClauses.push(`"isFeatured" = $${index++}`);
+            values.push(isFeatured);
+        }
+
+        if (setClauses.length === 0) return res.status(400).json({ message: "No updates provided" });
+
+        queryText += setClauses.join(', ') + ` WHERE id = $${index} RETURNING *`;
+        values.push(req.params.id);
+
+        const result = await query(queryText, values);
+        if (result.rows.length > 0) res.json(result.rows[0]);
+        else res.status(404).json({ message: "Opportunity not found" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
 // DELETE Opportunity (Admin)
 app.delete('/admin/opportunities/:id', async (req, res) => {
     try {

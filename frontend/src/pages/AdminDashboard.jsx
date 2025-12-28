@@ -235,7 +235,10 @@ const AdminDashboard = () => {
                                                 <td style={{ padding: '1rem' }}>{op.status}</td>
                                                 <td style={{ padding: '1rem' }}>
                                                     {op.status === 'pending' && <button onClick={() => handleOpAction(op.id, 'approve')} style={{ color: 'green', marginRight: '0.5rem' }}>Approve</button>}
-                                                    <button onClick={() => handleDeleteOp(op.id)} style={{ color: 'red' }}>Delete</button>
+                                                    <button onClick={() => handleDeleteOp(op.id)} style={{ color: 'red', marginRight: '0.5rem' }}>Delete</button>
+                                                    <button onClick={() => handleOpAction(op.id, op.isFeatured ? 'unfeature' : 'feature')} style={{ color: op.isFeatured ? '#d97706' : '#4f46e5', fontWeight: 'bold' }}>
+                                                        {op.isFeatured ? '★ Unfeature' : '☆ Feature'}
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
