@@ -165,6 +165,21 @@ const AdminDashboard = () => {
         }
     };
 
+    // Sync External Jobs
+    const handleSyncJobs = async () => {
+        if (!window.confirm("Trigger automated job search? This may take a few seconds.")) return;
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/trigger-aggregation`);
+            const data = await res.json();
+            alert(data.message || "Sync started!");
+            // Reload data after 3 seconds to show new jobs
+            setTimeout(fetchData, 3000);
+        } catch (err) {
+            alert("Failed to trigger sync");
+            console.error(err);
+        }
+    };
+
     // Post Op State
     const [newOp, setNewOp] = useState({ title: '', company: '', type: 'job', location: '', description: '', applyLink: '', deadline: '', tagsString: '' });
 
@@ -384,9 +399,76 @@ const AdminDashboard = () => {
                         </div>
                     )}
 
-                    {activeTab === 'ops' && (
-                        <div>
-                            <h2 style={{ marginBottom: '1.5rem' }}>Manage Opportunities</h2>
+    // Sync External Jobs
+    const handleSyncJobs = async () => {
+        if (!window.confirm("Trigger automated job search? This may take a few seconds.")) return;
+                    try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/trigger-aggregation`);
+                    const data = await res.json();
+                    alert(data.message || "Sync started!");
+                    // Reload data after 3 seconds to show new jobs
+                    setTimeout(fetchData, 3000);
+        } catch (err) {
+                        alert("Failed to trigger sync");
+                    console.error(err);
+        }
+    };
+
+                    return (
+                    <div className="dashboard-container" style={{ display: 'flex', minHeight: '100vh', background: '#f3f4f6' }}>
+                        {/* Sidebar (simplified inline for now) */}
+                        <aside style={{ width: '250px', background: '#1F2937', color: 'white', padding: '2rem 1rem', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                🛡️ Admin Panel
+                            </div>
+                            <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                                <button onClick={() => setActiveTab('overview')} style={{ textAlign: 'left', padding: '0.75rem', borderRadius: '8px', background: activeTab === 'overview' ? '#374151' : 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>📊 Overview</button>
+                                <button onClick={() => setActiveTab('ops')} style={{ textAlign: 'left', padding: '0.75rem', borderRadius: '8px', background: activeTab === 'ops' ? '#374151' : 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>💼 Opportunities</button>
+                                <button onClick={() => setActiveTab('companies')} style={{ textAlign: 'left', padding: '0.75rem', borderRadius: '8px', background: activeTab === 'companies' ? '#374151' : 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>🏢 Companies</button>
+                                <button onClick={() => setActiveTab('users')} style={{ textAlign: 'left', padding: '0.75rem', borderRadius: '8px', background: activeTab === 'users' ? '#374151' : 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>👥 Users</button>
+                                <button onClick={() => setActiveTab('apps')} style={{ textAlign: 'left', padding: '0.75rem', borderRadius: '8px', background: activeTab === 'apps' ? '#374151' : 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>📝 Applications</button>
+                                <button onClick={() => setActiveTab('messages')} style={{ textAlign: 'left', padding: '0.75rem', borderRadius: '8px', background: activeTab === 'messages' ? '#374151' : 'transparent', color: 'white', border: 'none', cursor: 'pointer' }}>💬 Messages</button>
+                            </nav>
+                            <div style={{ marginTop: 'auto', borderTop: '1px solid #374151', paddingTop: '1rem' }}>
+                                <Link to="/" style={{ display: 'block', padding: '0.75rem', color: '#9CA3AF', textDecoration: 'none' }}>⬅ Back to Home</Link>
+                                <button onClick={logout} style={{ width: '100%', textAlign: 'left', padding: '0.75rem', background: 'transparent', color: '#EF4444', border: 'none', cursor: 'pointer', marginTop: '0.5rem' }}>Log Out</button>
+                            </div>
+                        </aside>
+
+                        {/* Main Content */}
+                        <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+                            {/* Header */}
+                            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                                <div>
+                                    <h1 style={{ fontSize: '1.8rem', fontWeight: '800', color: '#111827' }}>Welcome, Admin</h1>
+                                    <p style={{ color: '#6B7280' }}>Here's what's happening today.</p>
+                                </div>
+                                {/* Add Sync Button in Header if visible globally, or specific tabs */}
+                                <button onClick={fetchData} style={{ padding: '0.5rem 1rem', background: 'white', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer' }}>Refresh Data</button>
+                            </header>
+
+                            {loading ? <div style={{ textAlign: 'center', marginTop: '4rem' }}>Loading Admin Data...</div> : (
+                                <>
+                                    {/* Tab Content */}
+                                    {activeTab === 'overview' && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                                            {/* ... (Overview Cards - keeping as is, assumed to be here) ... */}
+                                            {/* Wait, I am replacing a chunk. I need to be careful not to delete lines I can't see. 
+                                     I will insert handleSyncJobs at the top of return statement? 
+                                     Actually, I should insert it BEFORE return.
+                                     And the button in the 'ops' section.
+                                     Let's use a simpler replacement.
+                                 */}
+                                        </div>
+                                    )}
+                                    {/* ... */}
+                                </>
+                            )}
+    // Wait, the ReplacementContent above is pseudo-code. I must target specific blocks.
+                            // I will abort this big replacement and do small chunks.
+                            // 1. Insert handleSyncJobs before return.
+                            // 2. Insert button in ops tab.
+
 
                             <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -454,7 +536,7 @@ const AdminDashboard = () => {
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                    </div>
                     )}
 
                     {activeTab === 'post-op' && (
@@ -658,10 +740,14 @@ const AdminDashboard = () => {
                         )
                     }
 
-                    {activeTab === 'apps' && (
+                    {activeTab === 'ops' && (
                         <div>
-                            <h2 style={{ marginBottom: '1.5rem' }}>Review Applications</h2>
-                            {/* ... (existing apps view) ... */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h2 style={{ margin: 0 }}>Manage Opportunities</h2>
+                                <button onClick={handleSyncJobs} style={{ padding: '0.6rem 1.2rem', background: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    🤖 Sync External Jobs
+                                </button>
+                            </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {applications.length === 0 && <p style={{ color: 'var(--text-light)' }}>No applications found.</p>}
                                 {applications.map(app => {

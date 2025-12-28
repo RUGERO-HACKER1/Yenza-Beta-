@@ -434,13 +434,13 @@ app.post('/messages', async (req, res) => {
     }
 });
 
-// MANUAL TRIGGER: Job Aggregator
-app.post('/admin/trigger-aggregation', async (req, res) => {
+// MANUAL TRIGGER: Job Aggregator (Allow GET for easy browser access)
+app.use('/admin/trigger-aggregation', async (req, res) => {
     try {
         console.log("Manually triggering job aggregation...");
         // Run asynchronously (don't wait for it to finish to respond)
         runAggregator();
-        res.json({ message: "Aggregator started in background. Check database in a few seconds." });
+        res.json({ message: "Aggregator started! Check the Opportunities tab in a few seconds." });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Failed to trigger aggregator" });
