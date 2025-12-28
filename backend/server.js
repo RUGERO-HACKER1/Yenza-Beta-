@@ -413,18 +413,28 @@ app.get('/admin/messages', async (req, res) => {
 
 // POST Contact Message
 app.post('/messages', async (req, res) => {
-    console.log("Received Message Request:", req.body);
+    console.log("DEBUG: Received Message Request:", req.body);
     const { name, email, subject, message } = req.body;
+
     try {
-        await query(
+        // Enforce a timeout
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('DB Query Timeout')), 5000)
+        );
+
+        const dbPromise = query(
             "INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)",
             [name, email, subject, message]
         );
-        console.log("Message saved successfully.");
+
+        console.log("DEBUG: Sending INSERT query...");
+        await Promise.race([dbPromise, timeoutPromise]);
+
+        console.log("DEBUG: Message saved successfully.");
         res.sendStatus(201);
     } catch (err) {
-        console.error("Failed to save message:", err);
-        res.status(500).json({ message: "Failed to send message" });
+        console.error("DEBUG: Failed to save message:", err.message, err.stack);
+        res.status(500).json({ message: "Failed to send message: " + err.message });
     }
 });
 

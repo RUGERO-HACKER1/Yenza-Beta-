@@ -15,7 +15,18 @@ const pool = new Pool({
     ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
-export const query = (text, params) => pool.query(text, params);
+export const query = async (text, params) => {
+    const start = Date.now();
+    try {
+        const res = await pool.query(text, params);
+        const duration = Date.now() - start;
+        // console.log('executed query', { text, duration, rows: res.rowCount });
+        return res;
+    } catch (err) {
+        console.error('Error in query', { text, err });
+        throw err;
+    }
+};
 
 export const initDB = async () => {
     try {
