@@ -401,25 +401,29 @@ app.get('/admin/applications', async (req, res) => {
 // GET All Messages (Admin)
 app.get('/admin/messages', async (req, res) => {
     try {
+        console.log("Fetching messages for admin...");
         const result = await query("SELECT * FROM messages ORDER BY \"createdAt\" DESC");
+        console.log(`Found ${result.rows.length} messages.`);
         res.json(result.rows);
     } catch (err) {
-        console.error(err);
+        console.error("Error fetching messages:", err);
         res.status(500).json({ message: "Server Error" });
     }
 });
 
 // POST Contact Message
 app.post('/messages', async (req, res) => {
+    console.log("Received Message Request:", req.body);
     const { name, email, subject, message } = req.body;
     try {
         await query(
             "INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)",
             [name, email, subject, message]
         );
+        console.log("Message saved successfully.");
         res.sendStatus(201);
     } catch (err) {
-        console.error(err);
+        console.error("Failed to save message:", err);
         res.status(500).json({ message: "Failed to send message" });
     }
 });
