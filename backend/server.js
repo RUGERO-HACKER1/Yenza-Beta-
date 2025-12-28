@@ -105,7 +105,7 @@ app.post('/opportunities', async (req, res) => {
             RETURNING *`,
             [
                 title, type, company || 'Hidden', companyId || 'admin-posted', location, description,
-                deadline || null, salaryRange, isFeatured || false, status || 'approved',
+                deadline || null, salaryRange, isFeatured || false, 'approved',
                 applicationMethod || 'platform', externalApplyUrl || null, details
             ]
         );

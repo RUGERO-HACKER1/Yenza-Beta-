@@ -5,45 +5,39 @@ const OpportunitiesPage = () => {
     const [opportunities, setOpportunities] = useState([]);
     const [companyMap, setCompanyMap] = useState({});
     const [loading, setLoading] = useState(true);
-    const [showFilters, setShowFilters] = useState(false); // Mobile toggle
 
-    // --- 1. FILTER STATE (The 17-Point List) ---
-    const [filters, setFilters] = useState({
-        // Must-Haves
-        type: 'all',
-        location: '',
-        datePosted: 'any',
-        deadline: 'any',
-        keyword: '',
-        // Job
-        experienceLevel: 'any',
-        salaryType: 'any', // Paid, Unpaid
-        workMode: 'any',
-        // Gig
-        budgetType: 'any',
-        duration: 'any',
-        // Event
-        eventMode: 'any',
-        eventCost: 'any',
-        eventDate: 'any',
-        // Learning
-        learningType: 'any',
-        learningCost: 'any',
-        learningMode: 'any',
-        provider: 'any'
-    });
-
-    const [sortBy, setSortBy] = useState('featured');
+    // --- FILTERS STATE ---
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedType, setSelectedType] = useState('all');
+    const [locationFilter, setLocationFilter] = useState('any');
+    const [deadlineFilter, setDeadlineFilter] = useState('any');
+    const [expFilter, setExpFilter] = useState('any');
+    const [studentFriendly, setStudentFriendly] = useState(false);
 
     useEffect(() => {
         Promise.all([
             fetch(`${import.meta.env.VITE_API_URL}/opportunities`).then(res => res.json()),
             fetch(`${import.meta.env.VITE_API_URL}/companies`).then(res => res.json())
         ]).then(([opsData, companiesData]) => {
-            setOpportunities(opsData);
+            // 2️⃣ Normalize details once (CRITICAL)
+            const normalizedOps = opsData.map(op => {
+                const d = op.details || {};
+                return {
+                    ...op,
+                    ...d,
+                    learningType: d.learningType || d.learning_type,
+                    courseProvider: d.courseProvider || d.provider,
+                    cost: d.cost || d.price,
+                    experienceLevel: d.experienceLevel || d.experience,
+                    locationType: d.locationType || d.workMode,
+                };
+            });
+            setOpportunities(normalizedOps);
+
             const map = {};
             companiesData.forEach(c => map[c.id] = c);
             setCompanyMap(map);
+
             setLoading(false);
         }).catch(err => {
             console.error("Failed to fetch", err);
@@ -51,399 +45,321 @@ const OpportunitiesPage = () => {
         });
     }, []);
 
-    // --- 2. FILTER LOGIC ---
-    const updateFilter = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-    };
+    // --- LOGIC ---
+    const filteredOps = opportunities.filter(op => {
+        const type = (op.type || '').toLowerCase();
+        const loc = (op.location || '').toLowerCase();
+        const locType = (op.locationType || '').toLowerCase();
+        const exp = (op.experienceLevel || '').toLowerCase();
 
-    const clearFilters = () => {
-        setFilters({
-            type: 'all', location: '', datePosted: 'any', deadline: 'any', keyword: '',
-            experienceLevel: 'any', salaryType: 'any', workMode: 'any',
-            budgetType: 'any', duration: 'any',
-            eventMode: 'any', eventCost: 'any', eventDate: 'any',
-            learningType: 'any', learningCost: 'any', learningMode: 'any', provider: 'any'
-        });
-        setSearchQuery('');
-    };
+        // 0. Search
+        const searchLower = searchQuery.toLowerCase();
+        if (searchQuery && !op.title?.toLowerCase().includes(searchLower) && !op.company?.toLowerCase().includes(searchLower)) {
+            return false;
+        }
 
-    // Helper: Date Logic
-    const isRecent = (dateStr, days) => {
-        if (!dateStr) return false;
-        const fn = new Date(dateStr);
-        const now = new Date();
-        const diffTime = Math.abs(now - fn);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays <= days;
-    };
-
-    const matchesFilter = (op) => {
         // 1. Type
-        if (filters.type !== 'all' && op.type !== filters.type) return false;
+        if (selectedType !== 'all' && type !== selectedType) return false;
 
-        // 2. Keyword
-        const q = filters.keyword.toLowerCase();
-        if (q && !op.title.toLowerCase().includes(q) && !op.company.toLowerCase().includes(q) && !op.description?.toLowerCase().includes(q)) return false;
+        // 2. Location
+        if (locationFilter === 'remote' && (!locType.includes('remote') && !loc.includes('remote'))) return false;
+        if (locationFilter === 'onsite' && (!locType.includes('on-site') && !locType.includes('onsite') && !loc.includes('site'))) return false;
+        if (locationFilter === 'hybrid' && !locType.includes('hybrid')) return false;
 
-        // 3. Location
-        if (filters.location) {
-            const loc = (op.location || '').toLowerCase();
-            const typeLoc = (op.locationType || '').toLowerCase();
-            const fl = filters.location.toLowerCase();
-            if (!loc.includes(fl) && !typeLoc.includes(fl)) return false;
-        }
-
-        // 4. Date Posted
-        if (filters.datePosted !== 'any') {
-            if (filters.datePosted === 'today' && !isRecent(op.createdAt, 1)) return false;
-            if (filters.datePosted === '3days' && !isRecent(op.createdAt, 3)) return false;
-            if (filters.datePosted === '7days' && !isRecent(op.createdAt, 7)) return false;
-            if (filters.datePosted === '30days' && !isRecent(op.createdAt, 30)) return false;
-        }
-
-        // 5. Deadline
-        if (filters.deadline === 'closing_soon') {
+        // 3. Deadline
+        if (deadlineFilter === 'soon') {
             if (!op.deadline) return false;
             const daysLeft = (new Date(op.deadline) - new Date()) / (1000 * 60 * 60 * 24);
-            if (daysLeft < 0 || daysLeft > 7) return false;
+            if (daysLeft < 0 || daysLeft > 14) return false;
         }
 
-        // --- SCOPED FILTERS ---
-        // JOB
-        if (op.type === 'job' || op.type === 'internship') {
-            if (filters.experienceLevel !== 'any' && op.experienceLevel !== filters.experienceLevel) return false;
-            if (filters.workMode !== 'any' && op.locationType !== filters.workMode) return false;
-            if (filters.salaryType !== 'any') {
-                const isPaid = op.salaryRange && op.salaryRange !== 'Unpaid';
-                if (filters.salaryType === 'paid' && !isPaid) return false;
-                if (filters.salaryType === 'unpaid' && isPaid) return false;
-            }
-        }
+        // 4. Experience
+        if (expFilter !== 'any' && !exp.includes(expFilter)) return false;
 
-        // GIG
-        if (op.type === 'gig') {
-            // Budget logic simplified (checking string presence or 'Fixed'/'Hourly')
-            if (filters.budgetType !== 'any' && !op.budget?.includes(filters.budgetType)) return false;
-            if (filters.duration !== 'any' && op.duration !== filters.duration) return false;
-        }
-
-        // EVENT
-        if (op.type === 'event') {
-            if (filters.eventMode !== 'any' && op.locationType !== filters.eventMode) return false;
-            if (filters.eventCost !== 'any') {
-                const isFree = op.registrationType === 'Free';
-                if (filters.eventCost === 'Free' && !isFree) return false;
-                if (filters.eventCost === 'Paid' && isFree) return false;
-            }
-            // Event Date Logic (This Week/Month)
-            if (filters.eventDate !== 'any') {
-                const d = new Date(op.startDate);
-                const now = new Date();
-                const endOfWeek = new Date(); endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
-                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-                if (filters.eventDate === 'this_week' && d > endOfWeek) return false;
-                if (filters.eventDate === 'this_month' && d > endOfMonth) return false;
-            }
-        }
-
-        // LEARNING
-        if (op.type === 'learning') {
-            if (filters.learningType !== 'any' && op.learningType !== filters.learningType) return false;
-            if (filters.learningMode !== 'any' && op.courseMode !== filters.learningMode) return false;
-            if (filters.learningCost !== 'any') {
-                const isFree = op.cost === 'Free';
-                if (filters.learningCost === 'Free' && !isFree) return false;
-                if (filters.learningCost === 'Paid' && isFree) return false;
-            }
-            if (filters.provider !== 'any' && !op.courseProvider?.toLowerCase().includes(filters.provider.toLowerCase())) return false;
+        // 5. Student Friendly
+        if (studentFriendly) {
+            const isIntern = type === 'internship';
+            const isLearning = type === 'learning';
+            const isEntry = exp.includes('entry');
+            const isFree = (op.cost || '').toLowerCase() === 'free' || (op.registrationType || '').toLowerCase() === 'free';
+            if (!isIntern && !isLearning && !isEntry && !isFree) return false;
         }
 
         return true;
-    };
-
-
-    const filteredOps = opportunities.filter(matchesFilter);
-
-    const sortedOps = [...filteredOps].sort((a, b) => {
-        if (sortBy === 'featured') {
-            if (a.isFeatured && !b.isFeatured) return -1;
-            if (!a.isFeatured && b.isFeatured) return 1;
-            return new Date(b.createdAt) - new Date(a.createdAt);
-        }
-        if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-        if (sortBy === 'deadline') {
-            if (!a.deadline) return 1;
-            if (!b.deadline) return -1;
-            return new Date(a.deadline) - new Date(b.deadline);
-        }
-        return 0;
     });
 
-    if (loading) return <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>Loading opportunities...</div>;
+    const sortedOps = [...filteredOps].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <div className="loader"></div>
+            <style>{`.loader { border: 4px solid #f3f4f6; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; } @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+    );
 
     return (
-        <div className="container" style={{ padding: '2rem 24px', minHeight: '80vh' }}>
-            {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
-                <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Find Opportunities</h2>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, position: 'relative' }}>
+        <div className="container" style={{ padding: '2rem 24px', minHeight: '80vh', maxWidth: '1200px', margin: '0 auto' }}>
+
+            {/* --- HEADER --- */}
+            <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
+                <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.5rem', background: 'linear-gradient(90deg, #1e293b, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    Find Your Next Step
+                </h2>
+                <p style={{ color: '#64748b', fontSize: '1.1rem' }}>Discover jobs, internships, events, and learning opportunities tailored for you.</p>
+            </div>
+
+            {/* --- PREMIUM FILTER BAR --- */}
+            <div className="filter-card" style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '24px', border: '1px solid rgba(229, 231, 235, 0.5)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)', marginBottom: '3rem' }}>
+
+                {/* Top: Search & Student Toggle */}
+                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ flex: 1, position: 'relative', minWidth: '280px' }}>
+                        <span style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', color: '#9ca3af' }}>🔍</span>
                         <input
                             type="text"
-                            placeholder="🔍 Search by title, company, or keyword..."
-                            value={filters.keyword}
-                            onChange={(e) => updateFilter('keyword', e.target.value)}
-                            style={{ width: '100%', padding: '1rem', paddingLeft: '3rem', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1rem', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}
+                            placeholder="Search title, company, or keyword..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{
+                                width: '100%', padding: '1rem 1rem 1rem 3.5rem',
+                                borderRadius: '16px', border: '2px solid #f3f4f6',
+                                fontSize: '1rem', transition: 'all 0.2s', outline: 'none',
+                                backgroundColor: '#f9fafb'
+                            }}
+                            className="search-input"
                         />
-                        <span style={{ position: 'absolute', left: '1rem', top: '1rem', fontSize: '1.2rem' }}>🔍</span>
                     </div>
-                    <button onClick={() => setShowFilters(!showFilters)} className="btn btn-outline mobile-only" style={{ display: 'none' }}>
-                        🌪 Filters
-                    </button>
-                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer' }}>
-                        <option value="featured">✨ Featured</option>
-                        <option value="newest">🕒 Newest</option>
-                        <option value="deadline">📅 Closing Soon</option>
-                    </select>
+
+                    {/* ⭐ GOLD STUDENT TOGGLE */}
+                    <label
+                        className={`student-toggle ${studentFriendly ? 'active' : ''}`}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '0.75rem',
+                            padding: '0.8rem 1.5rem', borderRadius: '16px', cursor: 'pointer',
+                            border: studentFriendly ? '2px solid #fbbf24' : '2px solid #f3f4f6',
+                            background: studentFriendly ? '#fffbeb' : 'white',
+                            transition: 'all 0.3s ease', userSelect: 'none'
+                        }}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={studentFriendly}
+                            onChange={(e) => setStudentFriendly(e.target.checked)}
+                            style={{ display: 'none' }}
+                        />
+                        <span style={{ fontSize: '1.2rem' }}>{studentFriendly ? '⭐' : '🎓'}</span>
+                        <div>
+                            <span style={{ display: 'block', fontWeight: '800', fontSize: '0.9rem', color: studentFriendly ? '#92400e' : '#374151' }}>Student Friendly</span>
+                            {studentFriendly && <span style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: '500' }}>Active</span>}
+                        </div>
+                    </label>
                 </div>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem', alignItems: 'start' }}>
+                <div style={{ height: '1px', background: '#f3f4f6', marginBottom: '1.5rem' }}></div>
 
-                {/* --- SIDEBAR FILTERS --- */}
-                <aside style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)', position: 'sticky', top: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Filters</h3>
-                        <button onClick={clearFilters} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.9rem' }}>Reset</button>
+                {/* Middle: Type Pills */}
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.8rem', letterSpacing: '0.05em' }}>Category</span>
+                    <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '4px' }} className="hide-scrollbar">
+                        {[
+                            { id: 'all', label: 'All', icon: '🌐' },
+                            { id: 'job', label: 'Jobs', icon: '💼' },
+                            { id: 'internship', label: 'Internships', icon: '🎓' },
+                            { id: 'learning', label: 'Learning', icon: '📚' },
+                            { id: 'event', label: 'Events', icon: '📅' },
+                            { id: 'gig', label: 'Freelance', icon: '⚡' }
+                        ].map(type => (
+                            <button
+                                key={type.id}
+                                onClick={() => setSelectedType(type.id)}
+                                className={`filter-pill ${selectedType === type.id ? 'active' : ''}`}
+                            >
+                                <span className="icon">{type.icon}</span>
+                                {type.label}
+                            </button>
+                        ))}
                     </div>
+                </div>
 
-                    {/* 1. Opportunity Type */}
-                    <div className="filter-group">
-                        <label>Type</label>
-                        <select value={filters.type} onChange={(e) => updateFilter('type', e.target.value)}>
-                            <option value="all">All Types</option>
-                            <option value="job">💼 Job</option>
-                            <option value="internship">🎓 Internship</option>
-                            <option value="part-time">⏳ Part-Time</option>
-                            <option value="gig">⚡ Gig / Freelance</option>
-                            <option value="event">📅 Event</option>
-                            <option value="learning">📚 Learning / Course</option>
-                        </select>
-                    </div>
-
-                    {/* 2. Common Filters */}
-                    <div className="filter-group">
+                {/* Bottom: Dropdowns Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+                    <div className="select-wrapper">
                         <label>Location</label>
-                        <select value={filters.location} onChange={(e) => updateFilter('location', e.target.value)}>
-                            <option value="">Anywhere</option>
-                            <option value="Remote">Remote</option>
-                            <option value="Rwanda">Rwanda</option>
-                            <option value="Kigali">Kigali</option>
-                            <option value="Kenya">Kenya</option>
-                            <option value="Global">Global</option>
+                        <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)}>
+                            <option value="any">🌍 Anywhere</option>
+                            <option value="remote">🏠 Remote Only</option>
+                            <option value="onsite">🏢 On-site</option>
+                            <option value="hybrid">🔄 Hybrid</option>
                         </select>
                     </div>
-
-                    <div className="filter-group">
-                        <label>Date Posted</label>
-                        <select value={filters.datePosted} onChange={(e) => updateFilter('datePosted', e.target.value)}>
-                            <option value="any">Any Time</option>
-                            <option value="today">Today</option>
-                            <option value="3days">Last 3 Days</option>
-                            <option value="7days">Last 7 Days</option>
-                            <option value="30days">Last 30 Days</option>
+                    <div className="select-wrapper">
+                        <label>Deadline</label>
+                        <select value={deadlineFilter} onChange={(e) => setDeadlineFilter(e.target.value)}>
+                            <option value="any">📅 All Dates</option>
+                            <option value="soon">🔥 Closing Soon (14d)</option>
                         </select>
                     </div>
-
-                    {/* --- DYNAMIC FILTERS BASED ON TYPE --- */}
-
-                    {/* JOBS / INTERNSHIPS */}
-                    {(filters.type === 'job' || filters.type === 'internship' || filters.type === 'all') && (
-                        <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem', marginTop: '1rem' }}>
-                            <p className="filter-header">Job Options</p>
-                            <div className="filter-group">
-                                <label>Experience</label>
-                                <select value={filters.experienceLevel} onChange={(e) => updateFilter('experienceLevel', e.target.value)}>
-                                    <option value="any">Any Level</option>
-                                    <option value="Entry">Entry Level</option>
-                                    <option value="Mid">Mid Level</option>
-                                    <option value="Senior">Senior</option>
-                                </select>
-                            </div>
-                            <div className="filter-group">
-                                <label>Work Mode</label>
-                                <select value={filters.workMode} onChange={(e) => updateFilter('workMode', e.target.value)}>
-                                    <option value="any">Any Mode</option>
-                                    <option value="On-site">On-site</option>
-                                    <option value="Remote">Remote</option>
-                                    <option value="Hybrid">Hybrid</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* GIGS */}
-                    {(filters.type === 'gig' || filters.type === 'all') && (
-                        <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem', marginTop: '1rem' }}>
-                            <p className="filter-header">Gig Options</p>
-                            <div className="filter-group">
-                                <label>Budget Type</label>
-                                <select value={filters.budgetType} onChange={(e) => updateFilter('budgetType', e.target.value)}>
-                                    <option value="any">Any</option>
-                                    <option value="Fixed">Fixed Price</option>
-                                    <option value="Hourly">Hourly</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* EVENTS */}
-                    {(filters.type === 'event' || filters.type === 'all') && (
-                        <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem', marginTop: '1rem' }}>
-                            <p className="filter-header">Event Options</p>
-                            <div className="filter-group">
-                                <label>Mode</label>
-                                <select value={filters.eventMode} onChange={(e) => updateFilter('eventMode', e.target.value)}>
-                                    <option value="any">Any</option>
-                                    <option value="Online">Online</option>
-                                    <option value="Physical">In-Person</option>
-                                </select>
-                            </div>
-                            <div className="filter-group">
-                                <label>Cost</label>
-                                <select value={filters.eventCost} onChange={(e) => updateFilter('eventCost', e.target.value)}>
-                                    <option value="any">Any</option>
-                                    <option value="Free">Free</option>
-                                    <option value="Paid">Paid / Ticketed</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* LEARNING -- VERY IMPORTANT */}
-                    {(filters.type === 'learning' || filters.type === 'all') && (
-                        <div style={{ borderTop: '1px solid #eee', paddingTop: '1rem', marginTop: '1rem', background: '#fafafa', padding: '10px', borderRadius: '8px' }}>
-                            <p className="filter-header" style={{ color: '#d97706' }}>📚 Learning Options</p>
-                            <div className="filter-group">
-                                <label>Type</label>
-                                <select value={filters.learningType} onChange={(e) => updateFilter('learningType', e.target.value)}>
-                                    <option value="any">Any</option>
-                                    <option value="Course">Course</option>
-                                    <option value="Scholarship">Scholarship</option>
-                                    <option value="Bootcamp">Bootcamp</option>
-                                    <option value="Certification">Certification</option>
-                                </select>
-                            </div>
-                            <div className="filter-group">
-                                <label>Cost</label>
-                                <select value={filters.learningCost} onChange={(e) => updateFilter('learningCost', e.target.value)}>
-                                    <option value="any">Any</option>
-                                    <option value="Free">Free</option>
-                                    <option value="Paid">Paid</option>
-                                    <option value="Fully Funded">Fully Funded</option>
-                                </select>
-                            </div>
-                            <div className="filter-group">
-                                <label>Provider</label>
-                                <select value={filters.provider} onChange={(e) => updateFilter('provider', e.target.value)}>
-                                    <option value="any">Any</option>
-                                    <option value="Google">Google</option>
-                                    <option value="Coursera">Coursera</option>
-                                    <option value="ALX">ALX</option>
-                                    <option value="University">Universities</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
-
-
-                    <style>{`
-                        .filter-group { margin-bottom: 1rem; }
-                        .filter-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: #374151; }
-                        .filter-group select { width: 100%; padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; background: #fff; }
-                        .filter-header { font-size: 0.85rem; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin-bottom: 0.8rem; letter-spacing: 0.5px; }
-                        @media (max-width: 768px) {
-                            .grid-layout { grid-template-columns: 1fr !important; }
-                            aside { display: none; } /* Add toggle logic later */
-                            .mobile-only { display: block !important; }
-                        }
-                    `}</style>
-                </aside>
-
-                {/* --- RESULTS AREA --- */}
-                <div>
-                    <div style={{ marginBottom: '1rem', color: 'var(--text-light)', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>Found {sortedOps.length} results</span>
-                        {filters.type !== 'all' && <span className={`tag tag-${filters.type}`}>{filters.type.toUpperCase()} LIST</span>}
+                    <div className="select-wrapper">
+                        <label>Experience</label>
+                        <select value={expFilter} onChange={(e) => setExpFilter(e.target.value)}>
+                            <option value="any">⚡ Any Level</option>
+                            <option value="entry">🌱 Entry Level</option>
+                            <option value="mid">🚀 Mid Level</option>
+                            <option value="senior">🧠 Senior</option>
+                        </select>
                     </div>
-
-                    {sortedOps.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '4rem', background: '#f9fafb', borderRadius: '12px' }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-                            <h3>No matches found</h3>
-                            <p style={{ color: '#6b7280' }}>Try adjusting or clearing your filters.</p>
-                            <button onClick={clearFilters} className="btn btn-outline" style={{ marginTop: '1rem' }}>Clear All Filters</button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-2" style={{ gap: '1.5rem' }}>
-                            {sortedOps.map(op => {
-                                const isVerified = companyMap[op.companyId]?.isVerified;
-                                // Keeping the exact card logic from before, just wrapped for grid layout
-                                // Simplified for brevity in this replace block, but ensuring All logic remains
-                                const isEvent = op.type === 'event';
-
-                                // ... (Insert existing card rendering logic here or componentize it) ...
-                                // For safety and length, I will use a simplified Card component structure 
-                                // but ideally we keep the rich cards. 
-                                // Let's try to inline the rich card logic as requested.
-
-                                return (
-                                    <Link to={`/opportunities/${op.id}`} key={op.id} className="card" style={{
-                                        display: 'flex', flexDirection: 'column', gap: '1rem', textDecoration: 'none', position: 'relative', overflow: 'hidden',
-                                        borderColor: op.isFeatured ? '#fcd34d' : 'var(--border)',
-                                        boxShadow: op.isFeatured ? '0 0 0 2px var(--secondary), var(--shadow-md)' : undefined,
-                                        height: '100%'
-                                    }}>
-                                        {op.isFeatured && (
-                                            <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--secondary)', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', padding: '0.25rem 0.75rem', borderBottomLeftRadius: '8px' }}>FEATURED</div>
-                                        )}
-
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                            <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', border: '1px solid var(--border)' }}>
-                                                {companyMap[op.companyId]?.logo ? <img src={companyMap[op.companyId].logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} /> : (op.type === 'job' ? '💼' : op.type === 'part-time' ? '⏳' : op.type === 'gig' ? '⚡' : op.type === 'learning' ? '📚' : op.type === 'event' ? '📅' : '🎓')}
-                                            </div>
-                                            <span className={`tag tag-${op.type}`}>{op.type}</span>
-                                        </div>
-
-                                        <div>
-                                            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.25rem', lineHeight: '1.4', color: '#1f2937' }}>{op.title}</h3>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <p style={{ color: 'var(--text-body)', fontSize: '0.9rem', fontWeight: '500' }}>{op.company}</p>
-                                                {isVerified && <span title="Verified" style={{ color: '#0ea5e9', fontSize: '0.9rem' }}>✔</span>}
-                                            </div>
-                                        </div>
-
-                                        {/* Dynamic Badges */}
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.8rem' }}>
-                                            {op.location && <span style={{ background: '#f3f4f6', padding: '2px 8px', borderRadius: '12px' }}>📍 {op.location}</span>}
-                                            {op.salaryRange && op.salaryRange !== 'Unpaid' && <span style={{ background: '#ecfdf5', color: '#065f46', padding: '2px 8px', borderRadius: '12px' }}>💰 {op.salaryRange}</span>}
-                                            {op.type === 'event' && <span style={{ background: '#eff6ff', color: '#1e40af', padding: '2px 8px', borderRadius: '12px' }}>📅 {new Date(op.startDate).toLocaleDateString()}</span>}
-                                        </div>
-
-                                        <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-light)' }}>
-                                            <span>{op.deadline ? `🕒 Deadline: ${new Date(op.deadline).toLocaleDateString()}` : `Posted: ${new Date(op.createdAt).toLocaleDateString()}`}</span>
-                                        </div>
-                                    </Link>
-                                )
-                            })}
-                        </div>
-                    )}
                 </div>
             </div>
+
+            {/* --- RESULTS --- */}
+            <div style={{ marginBottom: '1rem', color: '#94a3b8', fontWeight: '500', fontSize: '0.9rem' }}>
+                Found {sortedOps.length} opportunities
+            </div>
+
+            <div className="grid-cards">
+                {sortedOps.map(op => {
+                    const isStudent = (op.type === 'internship' || op.type === 'learning' || (op.experienceLevel || '').toLowerCase().includes('entry') || (op.cost || '').toLowerCase() === 'free');
+
+                    return (
+                        <Link to={`/opportunities/${op.id}`} key={op.id} className="opportunity-card">
+                            {/* Badges */}
+                            <div className="card-badges">
+                                {isStudent && <span className="badge badge-student">⭐ Student</span>}
+                                {op.isFeatured && <span className="badge badge-featured">✨ Featured</span>}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                <div className="card-logo">
+                                    {companyMap[op.companyId]?.logo ?
+                                        <img src={companyMap[op.companyId].logo} alt="" /> :
+                                        <span>{op.type === 'job' ? '💼' : op.type === 'event' ? '📅' : '⚡'}</span>
+                                    }
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h3 className="card-title">{op.title}</h3>
+                                    <p className="card-company">{op.company}</p>
+                                </div>
+                            </div>
+
+                            <div className="card-tags">
+                                <span className={`tag-pill type-${op.type}`}>{op.type}</span>
+                                {op.location && <span className="tag-pill">📍 {op.location}</span>}
+                                {op.salaryRange && op.salaryRange !== 'Unpaid' && <span className="tag-pill green">💰 {op.salaryRange}</span>}
+                                {op.deadline && <span className="tag-pill red">⏰ {new Date(op.deadline).toLocaleDateString()}</span>}
+                            </div>
+                        </Link>
+                    )
+                })}
+            </div>
+
+            {sortedOps.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '5rem', background: 'white', borderRadius: '24px', border: '2px dashed #e5e7eb' }}>
+                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🙈</div>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>No results found</h3>
+                    <p style={{ color: '#6b7280', marginBottom: '2rem' }}>try adjusting your filters to see more opportunities.</p>
+                    <button
+                        onClick={() => { setSearchQuery(''); setSelectedType('all'); setLocationFilter('any'); }}
+                        style={{ padding: '0.8rem 2rem', background: '#3b82f6', color: 'white', fontWeight: 'bold', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+                    >
+                        Clear Filters
+                    </button>
+                </div>
+            )}
+
+            {/* --- STYLES --- */}
+            <style>{`
+                .search-input:focus { border-color: #3b82f6 !important; background: white !important; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+                
+                .filter-pill {
+                    display: flex; alignItems: center; gap: 6px;
+                    padding: 0.6rem 1.2rem;
+                    border-radius: 99px;
+                    border: 1px solid #e5e7eb;
+                    background: white;
+                    color: #64748b;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    font-size: 0.95rem;
+                }
+                .filter-pill:hover { background: #f8fafc; transform: translateY(-1px); }
+                .filter-pill.active {
+                    background: #eff6ff;
+                    border-color: #3b82f6;
+                    color: #2563eb;
+                    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1);
+                }
+
+                .select-wrapper { display: flex; flexDirection: column; gap: 6px; }
+                .select-wrapper label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+                .select-wrapper select {
+                    padding: 0.8rem;
+                    border-radius: 12px;
+                    border: 2px solid #f3f4f6;
+                    background: #f9fafb;
+                    font-size: 0.95rem;
+                    color: #334155;
+                    cursor: pointer;
+                    transition: border-color 0.2s;
+                    outline: none;
+                }
+                .select-wrapper select:focus { border-color: #cbd5e1; background: white; }
+
+                .grid-cards {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                    gap: 1.5rem;
+                }
+
+                .opportunity-card {
+                    display: block;
+                    background: white;
+                    border-radius: 20px;
+                    padding: 1.5rem;
+                    text-decoration: none;
+                    border: 1px solid #e2e8f0;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    position: relative;
+                    overflow: hidden;
+                }
+                .opportunity-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+                    border-color: #cbd5e1;
+                }
+
+                .card-logo {
+                    width: 56px; height: 56px;
+                    border-radius: 14px;
+                    background: #f1f5f9;
+                    display: flex; alignItems: center; justifyContent: center;
+                    font-size: 1.75rem;
+                    border: 1px solid #e2e8f0;
+                    overflow: hidden;
+                }
+                .card-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+                .card-title { font-size: 1.15rem; fontWeight: 700; color: #0f172a; margin: 0 0 0.25rem 0; line-height: 1.3; }
+                .card-company { font-size: 0.95rem; color: #64748b; margin: 0; font-weight: 500; }
+
+                .card-badges { position: absolute; top: 1rem; right: 1rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+                .badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 99px; fontWeight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+                .badge-student { background: #fffbeb; color: #b45309; border: 1px solid #fcd34d; }
+                .badge-featured { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+                .card-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+                .tag-pill { font-size: 0.8rem; padding: 4px 10px; background: #f8fafc; color: #475569; border-radius: 8px; font-weight: 600; }
+                .tag-pill.type-job { background: #e0f2fe; color: #0369a1; }
+                .tag-pill.green { background: #dcfce7; color: #15803d; }
+                .tag-pill.red { background: #fee2e2; color: #b91c1c; }
+
+                @media (max-width: 640px) {
+                    .container { padding: 1.5rem 16px !important; }
+                    .grid-cards { grid-template-columns: 1fr; }
+                }
+            `}</style>
         </div>
     );
 };
 
 export default OpportunitiesPage;
-
