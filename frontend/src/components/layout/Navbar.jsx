@@ -7,6 +7,42 @@ const Navbar = () => {
   // Mobile Toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Notification State (Restored)
+  const [showNotif, setShowNotif] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = () => {
+    if (user) {
+      fetch(`${import.meta.env.VITE_API_URL}/notifications?userId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setNotifications(data);
+          setUnreadCount(data.filter(n => !n.read).length);
+        })
+        .catch(err => console.error(err));
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 5000); // Polling
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const markRead = (id) => {
+    fetch(`${import.meta.env.VITE_API_URL}/notifications/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ read: true })
+    }).then(() => {
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }).catch(console.error);
+  }
+
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
