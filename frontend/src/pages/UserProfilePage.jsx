@@ -16,38 +16,47 @@ const UserProfilePage = () => {
         }
 
         const fetchData = async () => {
-            // 1. Fetch User (for Bookmarks)
-            const userRes = await fetch(`${import.meta.env.VITE_API_URL}/users/${user.id}`);
-            const userData = await userRes.json();
+            try {
+                // 1. Fetch User (for Bookmarks)
+                const userRes = await fetch(`${import.meta.env.VITE_API_URL}/users/${user.id}`);
+                // If user fetch fails, we might be logged out or invalid
+                if (!userRes.ok) throw new Error("Failed to fetch user data");
 
-            if (JSON.stringify(userData.bookmarks) !== JSON.stringify(user.bookmarks)) {
-                login({ ...user, ...userData });
+                const userData = await userRes.json();
+
+                if (JSON.stringify(userData.bookmarks) !== JSON.stringify(user.bookmarks)) {
+                    login({ ...user, ...userData });
+                }
+
+                // 2. Fetch Opportunities
+                const opsRes = await fetch(`${import.meta.env.VITE_API_URL}/opportunities`);
+                const opsData = opsRes.ok ? await opsRes.json() : [];
+
+                // Resolve Bookmarks
+                if (userData.bookmarks && userData.bookmarks.length > 0) {
+                    const userBookmarks = opsData.filter(op => userData.bookmarks.includes(op.id));
+                    setBookmarks(userBookmarks);
+                } else {
+                    setBookmarks([]);
+                }
+
+                // 3. Fetch Applications
+                const appsRes = await fetch(`${import.meta.env.VITE_API_URL}/applications?userId=${user.id}`);
+                const appsData = appsRes.ok ? await appsRes.json() : [];
+
+                // Merge Application Status
+                const myApps = appsData.map(app => {
+                    const op = opsData.find(o => o.id === app.opportunityId);
+                    return { ...app, opportunity: op };
+                });
+                setApplications(myApps);
+
+            } catch (err) {
+                console.error("Profile Fetch Error:", err);
+                // Optionally set an error state here
+            } finally {
+                setLoading(false);
             }
-
-            // 2. Fetch Opportunities (cache this in real app)
-            const opsRes = await fetch(`${import.meta.env.VITE_API_URL}/opportunities`);
-            const opsData = await opsRes.json();
-
-            // Resolve Bookmarks
-            if (userData.bookmarks && userData.bookmarks.length > 0) {
-                const userBookmarks = opsData.filter(op => userData.bookmarks.includes(op.id));
-                setBookmarks(userBookmarks);
-            } else {
-                setBookmarks([]);
-            }
-
-            // 3. Fetch Applications
-            const appsRes = await fetch(`${import.meta.env.VITE_API_URL}/applications?userId=${user.id}`);
-            const appsData = await appsRes.json();
-
-            // Merge Application Status with Opportunity Details
-            const myApps = appsData.map(app => {
-                const op = opsData.find(o => o.id === app.opportunityId);
-                return { ...app, opportunity: op };
-            });
-            setApplications(myApps);
-
-            setLoading(false);
         };
         fetchData();
     }, [user, navigate]);
@@ -67,13 +76,38 @@ const UserProfilePage = () => {
 
     return (
         <div className="container" style={{ padding: '4rem 24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ width: '80px', height: '80px', background: '#bfdbfe', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>
+            <style>{`
+                .profile-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 3rem;
+                    flex-wrap: wrap;
+                    gap: 1.5rem;
+                }
+                .profile-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 1.5rem;
+                }
+                @media (max-width: 600px) {
+                    .profile-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                    }
+                    .profile-info {
+                        width: 100%;
+                    }
+                }
+            `}</style>
+
+            <div className="profile-header">
+                <div className="profile-info">
+                    <div style={{ width: '80px', height: '80px', background: '#bfdbfe', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', flexShrink: 0 }}>
                         👤
                     </div>
                     <div>
-                        <h1 style={{ marginBottom: '0.25rem' }}>{user.name}</h1>
+                        <h1 style={{ marginBottom: '0.25rem', fontSize: '1.8rem' }}>{user.name}</h1>
                         <p style={{ color: 'var(--text-light)' }}>{user.email}</p>
                     </div>
                 </div>
@@ -88,7 +122,7 @@ const UserProfilePage = () => {
                 {/* Bookmarks Section */}
                 <div>
                     <h2 style={{ marginBottom: '1.5rem' }}>Saved Opportunities</h2>
-                    {loading ? <div>Loading...</div> : (
+                    {loading ? <div style={{ color: '#666' }}>Loading saved items...</div> : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {bookmarks.length === 0 && <p style={{ color: 'var(--text-light)' }}>No bookmarks yet.</p>}
                             {bookmarks.map(op => (
@@ -107,17 +141,18 @@ const UserProfilePage = () => {
                 {/* Applications Section */}
                 <div>
                     <h2 style={{ marginBottom: '1.5rem' }}>My Applications</h2>
-                    {loading ? <div>Loading...</div> : (
+                    {loading ? <div style={{ color: '#666' }}>Loading applications...</div> : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {applications.length === 0 && <p style={{ color: 'var(--text-light)' }}>No applications sent yet.</p>}
                             {applications.map(app => (
                                 <div key={app.id} style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                                         <Link to={`/opportunities/${app.opportunityId}`} style={{ fontWeight: 'bold' }}>{app.opportunity ? app.opportunity.title : 'Unknown Role'}</Link>
                                         <span style={{
                                             fontSize: '0.75rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px',
                                             backgroundColor: app.status === 'shortlisted' ? '#dcfce7' : app.status === 'rejected' ? '#fee2e2' : '#fef3c7',
-                                            color: app.status === 'shortlisted' ? '#166534' : app.status === 'rejected' ? '#991b1b' : '#92400e'
+                                            color: app.status === 'shortlisted' ? '#166534' : app.status === 'rejected' ? '#991b1b' : '#92400e',
+                                            whiteSpace: 'nowrap'
                                         }}>
                                             {app.status.toUpperCase()}
                                         </span>

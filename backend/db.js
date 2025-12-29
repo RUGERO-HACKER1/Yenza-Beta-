@@ -135,7 +135,18 @@ export const initDB = async () => {
                 );
             `);
 
-            console.log("✅ Database Tables Verified/Created Successfully.");
+            // 7.5 Analytics Upgrades (Migration)
+            await client.query(`
+                ALTER TABLE page_views 
+                ADD COLUMN IF NOT EXISTS "ip" VARCHAR(45),
+                ADD COLUMN IF NOT EXISTS "country" VARCHAR(100),
+                ADD COLUMN IF NOT EXISTS "city" VARCHAR(100),
+                ADD COLUMN IF NOT EXISTS "referrer" TEXT,
+                ADD COLUMN IF NOT EXISTS "device" VARCHAR(50),
+                ADD COLUMN IF NOT EXISTS "browser" VARCHAR(50);
+            `);
+
+            console.log("✅ Database Tables Verified/Created & Analytics Schema Applied.");
         } finally {
             client.release();
         }

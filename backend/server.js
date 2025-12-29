@@ -522,24 +522,92 @@ app.get('/applications', async (req, res) => {
     }
 });
 
-// ANALYTICS
+// ANALYTICS (Enhanced)
+import useragent from 'useragent';
+import axios from 'axios';
+
 app.post('/track-view', async (req, res) => {
-    const { path, userId } = req.body;
+    const { path, userId, referrer } = req.body;
+
+    // 1. Get IP
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+    // 2. Parse User Agent (Device)
+    const agent = useragent.parse(req.headers['user-agent']);
+    const device = agent.device.toString() !== 'Other 0.0.0' ? 'Mobile' : 'Desktop'; // Simple heuristic
+    const browser = agent.toAgent();
+
+    // 3. Geolocation (Async, don't block response)
+    // We'll insert what we have, then optionally update or just insert nulls if lookup fails fast
+    let country = 'Unknown';
+    let city = 'Unknown';
+
     try {
-        await query("INSERT INTO page_views (path, \"userId\") VALUES ($1, $2)", [path, userId || null]);
+        // Use ip-api (Free for non-commercial, rate limited)
+        // Only lookup if not localhost/private
+        if (ip !== '127.0.0.1' && !ip.startsWith('192.168') && !ip.startsWith('10.')) {
+            const geoRes = await axios.get(`http://ip-api.com/json/${ip}?fields=status,country,city`);
+            if (geoRes.data.status === 'success') {
+                country = geoRes.data.country;
+                city = geoRes.data.city;
+            }
+        }
+    } catch (e) {
+        // console.warn("Geo lookup failed", e.message);
+    }
+
+    try {
+        await query(
+            `INSERT INTO page_views (path, "userId", ip, country, city, referrer, device, browser) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [path, userId || null, ip, country, city, referrer || 'Direct', device, browser]
+        );
         res.sendStatus(200);
     } catch (err) {
-        // Silent fail
         console.error("Tracking Error", err);
         res.sendStatus(500);
     }
 });
 
-app.get('/analytics/views', async (req, res) => {
+app.get('/analytics/dashboard', async (req, res) => {
     try {
-        const result = await query("SELECT path, COUNT(*) as count FROM page_views GROUP BY path ORDER BY count DESC LIMIT 20");
-        res.json(result.rows);
+        // 1. Total Visitors (Unique IPs)
+        const totalVisitorsRes = await query(`SELECT COUNT(DISTINCT ip) as count FROM page_views`);
+        const totalVisitors = totalVisitorsRes.rows[0].count;
+
+        // 2. Most Viewed Pages (Top 10)
+        const topPagesRes = await query(`SELECT path, COUNT(*) as count FROM page_views GROUP BY path ORDER BY count DESC LIMIT 10`);
+
+        // 3. Traffic Sources (Referrer)
+        // Group by referrer domain logic could be complex, for now raw
+        const sourcesRes = await query(`SELECT referrer, COUNT(*) as count FROM page_views GROUP BY referrer ORDER BY count DESC LIMIT 5`);
+
+        // 4. Geography (Top Countries/Cities)
+        const geoRes = await query(`SELECT country, city, COUNT(*) as count FROM page_views WHERE country != 'Unknown' GROUP BY country, city ORDER BY count DESC LIMIT 10`);
+
+        // 5. Device Breakdown
+        const deviceRes = await query(`SELECT device, COUNT(*) as count FROM page_views GROUP BY device`);
+
+        // 6. Daily Traffic (Last 7 Days)
+        const dailyRes = await query(`
+            SELECT TO_CHAR("timestamp", 'YYYY-MM-DD') as date, COUNT(*) as count 
+            FROM page_views 
+            WHERE "timestamp" > NOW() - INTERVAL '7 days' 
+            GROUP BY date 
+            ORDER BY date ASC
+        `);
+
+        res.json({
+            totalVisitors,
+            topPages: topPagesRes.rows,
+            sources: sourcesRes.rows,
+            geo: geoRes.rows,
+            devices: deviceRes.rows,
+            dailyTraffic: dailyRes.rows
+        });
+
     } catch (err) {
+        console.error("Analytics Dashboard Error", err);
         res.status(500).json({ message: "Server Error" });
     }
 });

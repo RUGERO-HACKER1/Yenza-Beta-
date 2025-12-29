@@ -36,7 +36,11 @@ function PageTracker() {
     fetch(`${import.meta.env.VITE_API_URL}/track-view`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: location.pathname, userId: user?.id })
+      body: JSON.stringify({
+        path: location.pathname,
+        userId: user?.id,
+        referrer: document.referrer || 'Direct'
+      })
     }).catch(e => console.warn("Track error", e));
   }, [location, user]);
 

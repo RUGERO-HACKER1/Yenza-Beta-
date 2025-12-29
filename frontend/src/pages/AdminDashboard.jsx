@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const AdminDashboard = () => {
     const { user, logout } = useAuth();
@@ -18,7 +18,9 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [applications, setApplications] = useState([]);
     const [messages, setMessages] = useState([]);
-    const [views, setViews] = useState([]);
+    const [analytics, setAnalytics] = useState({
+        totalVisitors: 0, topPages: [], sources: [], geo: [], devices: [], dailyTraffic: []
+    });
 
     // New Opportunity State
     const [newOp, setNewOp] = useState({
@@ -41,7 +43,7 @@ const AdminDashboard = () => {
                 safeFetch(`${import.meta.env.VITE_API_URL}/users`),
                 safeFetch(`${import.meta.env.VITE_API_URL}/admin/applications`),
                 safeFetch(`${import.meta.env.VITE_API_URL}/admin/messages`),
-                safeFetch(`${import.meta.env.VITE_API_URL}/analytics/views`)
+                safeFetch(`${import.meta.env.VITE_API_URL}/analytics/dashboard`)
             ]);
 
             setStats({
@@ -60,7 +62,7 @@ const AdminDashboard = () => {
             setUsers(usersData);
             setApplications(appsData);
             setMessages(msgsData);
-            setViews(viewsData);
+            setAnalytics(viewsData);
         } catch (err) {
             console.error("Error fetching admin data", err);
         } finally {
@@ -157,7 +159,7 @@ const AdminDashboard = () => {
             <aside style={{ width: '250px', background: '#1F2937', color: 'white', padding: '2rem 1rem', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '2rem' }}>🛡️ Admin Panel</div>
                 <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-                    {['overview', 'ops', 'companies', 'users', 'apps', 'messages'].map(tab => (
+                    {['overview', 'analytics', 'ops', 'companies', 'users', 'apps', 'messages'].map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)}
                             style={{ textAlign: 'left', padding: '0.75rem', borderRadius: '8px', background: activeTab === tab ? '#374151' : 'transparent', color: 'white', border: 'none', cursor: 'pointer', textTransform: 'capitalize' }}>
                             {tab === 'ops' ? 'Opportunities' : tab}
@@ -202,6 +204,100 @@ const AdminDashboard = () => {
                                         </ResponsiveContainer>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'analytics' && (
+                            <div className="analytics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+
+                                {/* Row 1: Key Stats */}
+                                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', gridColumn: 'span 2' }}>
+                                    <h3>Overview</h3>
+                                    <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
+                                        <div>
+                                            <p style={{ color: '#666' }}>👥 Total Unique Visitors</p>
+                                            <h2 style={{ fontSize: '2.5rem', color: '#3b82f6' }}>{analytics.totalVisitors}</h2>
+                                        </div>
+                                        <div>
+                                            <p style={{ color: '#666' }}>📄 Total Page Views</p>
+                                            <h2 style={{ fontSize: '2.5rem', color: '#10b981' }}>{analytics.topPages.reduce((acc, curr) => acc + parseInt(curr.count), 0)}</h2>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Traffic Trend */}
+                                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', gridColumn: 'span 2', height: '350px' }}>
+                                    <h3>📈 Daily Traffic (Last 7 Days)</h3>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={analytics.dailyTraffic}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="date" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Line type="monotone" dataKey="count" stroke="#8884d8" strokeWidth={3} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Row 3: Geo & Devices */}
+                                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px' }}>
+                                    <h3>🌍 Top Locations</h3>
+                                    <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem' }}>
+                                        {analytics.geo.map((g, i) => (
+                                            <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                                                <span>{g.city === 'Unknown' ? g.country : `${g.city}, ${g.country}`}</span>
+                                                <span style={{ fontWeight: 'bold' }}>{g.count}</span>
+                                            </li>
+                                        ))}
+                                        {analytics.geo.length === 0 && <p style={{ color: '#999' }}>No location data yet.</p>}
+                                    </ul>
+                                </div>
+
+                                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px' }}>
+                                    <h3>📱 Devices</h3>
+                                    <div style={{ height: '200px' }}>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={analytics.devices} dataKey="count" nameKey="device" cx="50%" cy="50%" outerRadius={80} fill="#82ca9d" label>
+                                                    {analytics.devices.map((entry, index) => <Cell key={index} fill={index % 2 === 0 ? '#8884d8' : '#82ca9d'} />)}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Row 4: Sources & Pages */}
+                                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px' }}>
+                                    <h3>🔗 Top Traffic Sources</h3>
+                                    <ul style={{ listStyle: 'none', padding: 0, marginTop: '1rem' }}>
+                                        {analytics.sources.map((s, i) => (
+                                            <li key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                                                <span style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {s.referrer === 'Direct' ? 'Direct / Bookmark' : s.referrer}
+                                                </span>
+                                                <span style={{ fontWeight: 'bold' }}>{s.count}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', gridColumn: 'span 2' }}>
+                                    <h3>📄 Most Viewed Pages</h3>
+                                    <table style={{ width: '100%', marginTop: '1rem' }}>
+                                        <thead><tr style={{ textAlign: 'left' }}><th>Path</th><th>Views</th></tr></thead>
+                                        <tbody>
+                                            {analytics.topPages.map((p, i) => (
+                                                <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                                    <td style={{ padding: '0.8rem 0', color: '#3b82f6' }}>{p.path}</td>
+                                                    <td style={{ fontWeight: 'bold' }}>{p.count}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
                             </div>
                         )}
 
